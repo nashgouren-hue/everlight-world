@@ -1,5 +1,6 @@
 import os
 import discord
+import io
 from discord import app_commands
 from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
