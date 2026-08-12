@@ -95,9 +95,9 @@ except:
     image.save(output, format="PNG")
     output.seek(0)
 
-    return discord.File(
-        output,
-        filename="welcome_member.png"
+        return discord.File(
+        buffer,
+        filename="welcome.png"
     )
 
 @bot.event
