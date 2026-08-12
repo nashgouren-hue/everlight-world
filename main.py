@@ -90,7 +90,7 @@ except:
         stroke_fill="#4a3c3c"
     )
 
-       # Simpan hasil ke memory
+    # Simpan hasil ke memory
     output = io.BytesIO()
     image.save(output, format="PNG")
     output.seek(0)
@@ -99,7 +99,6 @@ except:
         output,
         filename="welcome.png"
     )
-
 @bot.event
 async def on_ready():
     print(f"==============================")
