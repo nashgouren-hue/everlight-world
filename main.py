@@ -66,7 +66,7 @@ async def create_welcome_image(member):
     nama = member.display_name
 
     try:
-        font_nama = ImageFont.truetype("arialbd.ttf", 80)
+        font_nama = ImageFont.truetype("arialbd.ttf", 100)
     except:
         font_nama = ImageFont.load_default()
 
@@ -79,7 +79,7 @@ async def create_welcome_image(member):
     text_width = bbox[2] - bbox[0]
 
     nama_x = (image.width - text_width) // 2
-    nama_y = 390
+    nama_y = 410
 
     draw.text(
         (nama_x, nama_y),
