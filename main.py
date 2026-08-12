@@ -1,13 +1,32 @@
 import os
 import discord
 import io
+import sqlite3
 from discord import app_commands
 from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
 
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+# ==========================================
+# EVERLIGHT MODERATION DATABASE
+# ==========================================
 
+db = sqlite3.connect("warnings.db")
+cursor = db.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS warnings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    moderator_id INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+db.commit()
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -113,6 +132,303 @@ async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"✨ Hello {interaction.user.mention}! Welcome to Everlight!"
     )
+    # =====================================================
+# EVERLIGHT MODERATION SYSTEM
+# =====================================================
+
+
+# -------------------------
+# WARN
+# -------------------------
+
+@bot.tree.command(
+    name="warn",
+    description="Berikan warning kepada member"
+)
+@app_commands.checks.has_permissions(moderate_members=True)
+async def warn(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    reason: str
+):
+    if member == interaction.user:
+        await interaction.response.send_message(
+            "❌ Kamu tidak bisa memberikan warning kepada diri sendiri.",
+            ephemeral=True
+        )
+        return
+
+    cursor.execute(
+        """
+        INSERT INTO warnings
+        (guild_id, user_id, moderator_id, reason)
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            interaction.guild.id,
+            member.id,
+            interaction.user.id,
+            reason
+        )
+    )
+
+    db.commit()
+
+    warning_id = cursor.lastrowid
+
+    try:
+        await member.send(
+            f"⚠️ **EVERLIGHT VIRTUAL — OFFICIAL WARNING**\n\n"
+            f"Server: **{interaction.guild.name}**\n"
+            f"Warning ID: **#{warning_id}**\n"
+            f"Reason: **{reason}**\n"
+            f"Moderator: **{interaction.user}**\n\n"
+            f"Harap mengikuti peraturan server untuk menghindari "
+            f"tindakan moderasi selanjutnya."
+        )
+
+        dm_status = "📨 Warning telah dikirim melalui DM."
+
+    except discord.Forbidden:
+        dm_status = "⚠️ DM member tidak dapat dikirim."
+
+    await interaction.response.send_message(
+        f"⚠️ **MEMBER WARNED**\n\n"
+        f"👤 Member: {member.mention}\n"
+        f"🆔 Warning ID: **#{warning_id}**\n"
+        f"📝 Reason: **{reason}**\n"
+        f"🛡️ Moderator: {interaction.user.mention}\n\n"
+        f"{dm_status}"
+    )
+
+
+# -------------------------
+# CHECK WARNINGS
+# -------------------------
+
+@bot.tree.command(
+    name="warnings",
+    description="Lihat warning seorang member"
+)
+@app_commands.checks.has_permissions(moderate_members=True)
+async def warnings(
+    interaction: discord.Interaction,
+    member: discord.Member
+):
+    cursor.execute(
+        """
+        SELECT id, moderator_id, reason, created_at
+        FROM warnings
+        WHERE guild_id = ? AND user_id = ?
+        ORDER BY id ASC
+        """,
+        (
+            interaction.guild.id,
+            member.id
+        )
+    )
+
+    results = cursor.fetchall()
+
+    if not results:
+        await interaction.response.send_message(
+            f"✅ {member.mention} tidak memiliki warning.",
+            ephemeral=True
+        )
+        return
+
+    text = (
+        f"⚠️ **WARNING HISTORY — {member.display_name}**\n\n"
+    )
+
+    for warning_id, moderator_id, reason, created_at in results:
+        text += (
+            f"**#{warning_id}** — {reason}\n"
+            f"Moderator: <@{moderator_id}>\n"
+            f"Date: {created_at}\n\n"
+        )
+
+    await interaction.response.send_message(
+        text,
+        ephemeral=True
+    )
+
+
+# -------------------------
+# REMOVE ONE WARNING
+# -------------------------
+
+@bot.tree.command(
+    name="unwarn",
+    description="Hapus satu warning berdasarkan Warning ID"
+)
+@app_commands.checks.has_permissions(moderate_members=True)
+async def unwarn(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    warning_id: int
+):
+    cursor.execute(
+        """
+        DELETE FROM warnings
+        WHERE id = ?
+        AND guild_id = ?
+        AND user_id = ?
+        """,
+        (
+            warning_id,
+            interaction.guild.id,
+            member.id
+        )
+    )
+
+    db.commit()
+
+    if cursor.rowcount == 0:
+        await interaction.response.send_message(
+            f"❌ Warning **#{warning_id}** tidak ditemukan untuk "
+            f"{member.mention}.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message(
+        f"✅ Warning **#{warning_id}** milik "
+        f"{member.mention} telah dihapus."
+    )
+
+
+# -------------------------
+# CLEAR ALL WARNINGS
+# -------------------------
+
+@bot.tree.command(
+    name="clearwarnings",
+    description="Hapus semua warning seorang member"
+)
+@app_commands.checks.has_permissions(moderate_members=True)
+async def clearwarnings(
+    interaction: discord.Interaction,
+    member: discord.Member
+):
+    cursor.execute(
+        """
+        DELETE FROM warnings
+        WHERE guild_id = ? AND user_id = ?
+        """,
+        (
+            interaction.guild.id,
+            member.id
+        )
+    )
+
+    deleted = cursor.rowcount
+
+    db.commit()
+
+    await interaction.response.send_message(
+        f"🧹 Semua warning {member.mention} telah dihapus.\n"
+        f"Total warning dihapus: **{deleted}**"
+    )
+
+
+# -------------------------
+# KICK
+# -------------------------
+
+@bot.tree.command(
+    name="kick",
+    description="Kick member dari Everlight"
+)
+@app_commands.checks.has_permissions(kick_members=True)
+async def kick(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    reason: str = "Tidak ada alasan"
+):
+    if member == interaction.user:
+        await interaction.response.send_message(
+            "❌ Kamu tidak bisa kick diri sendiri.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        await member.send(
+            f"👢 **EVERLIGHT VIRTUAL — KICK NOTICE**\n\n"
+            f"Kamu telah dikeluarkan dari **{interaction.guild.name}**.\n"
+            f"Reason: **{reason}**\n"
+            f"Moderator: **{interaction.user}**"
+        )
+
+    except discord.Forbidden:
+        pass
+
+    try:
+        await member.kick(reason=reason)
+
+        await interaction.response.send_message(
+            f"👢 **MEMBER KICKED**\n\n"
+            f"👤 Member: **{member}**\n"
+            f"📝 Reason: **{reason}**\n"
+            f"🛡️ Moderator: {interaction.user.mention}"
+        )
+
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            "❌ Bot tidak memiliki permission untuk kick member ini.",
+            ephemeral=True
+        )
+
+
+# -------------------------
+# BAN
+# -------------------------
+
+@bot.tree.command(
+    name="ban",
+    description="Ban member dari Everlight"
+)
+@app_commands.checks.has_permissions(ban_members=True)
+async def ban(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    reason: str = "Tidak ada alasan"
+):
+    if member == interaction.user:
+        await interaction.response.send_message(
+            "❌ Kamu tidak bisa ban diri sendiri.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        await member.send(
+            f"🔨 **EVERLIGHT VIRTUAL — BAN NOTICE**\n\n"
+            f"Kamu telah dibanned secara permanen dari "
+            f"**{interaction.guild.name}**.\n\n"
+            f"Reason: **{reason}**\n"
+            f"Moderator: **{interaction.user}**"
+        )
+
+    except discord.Forbidden:
+        pass
+
+    try:
+        await member.ban(reason=reason)
+
+        await interaction.response.send_message(
+            f"🔨 **MEMBER BANNED**\n\n"
+            f"👤 Member: **{member}**\n"
+            f"📝 Reason: **{reason}**\n"
+            f"🛡️ Moderator: {interaction.user.mention}"
+        )
+
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            "❌ Bot tidak memiliki permission untuk ban member ini.",
+            ephemeral=True
+        )
 @bot.event
 async def on_member_join(member):
     channel = discord.utils.get(
