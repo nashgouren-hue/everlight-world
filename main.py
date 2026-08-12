@@ -99,6 +99,8 @@ except:
         output,
         filename="welcome.png"
     )
+
+
 @bot.event
 async def on_ready():
     print(f"==============================")
