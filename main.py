@@ -519,6 +519,58 @@ async def on_member_update(before, after):
         )
 
         print(f"BOOST DETECTED: {after}")
+
+# ==================================================
+# 💎 TEST BOOSTER COMMAND
+# ==================================================
+
+@bot.tree.command(
+    name="testbooster",
+    description="Test Everlight booster notification"
+)
+@app_commands.checks.has_permissions(administrator=True)
+async def testbooster(interaction: discord.Interaction):
+
+    channel = discord.utils.get(
+        interaction.guild.text_channels,
+        name="booster"
+    )
+
+    if channel is None:
+        await interaction.response.send_message(
+            "❌ Channel #booster tidak ditemukan.",
+            ephemeral=True
+        )
+        return
+
+    member = interaction.user
+
+    embed = discord.Embed(
+        title="💎 EVERLIGHT SERVER BOOST 💎",
+        description=(
+            f"✨ Thank you {member.mention}! ✨\n\n"
+            f"You just boosted **{interaction.guild.name}**!\n\n"
+            f"Your support helps Everlight shine even brighter. 🌙✨\n"
+            f"Thank you for supporting our community!"
+        ),
+        color=discord.Color.from_rgb(255, 105, 180)
+    )
+
+    embed.set_thumbnail(url=member.display_avatar.url)
+
+    embed.set_footer(
+        text="Everlight Virtual • Keep Your Light Alive ✨"
+    )
+
+    await channel.send(
+        content=f"💎 {member.mention}",
+        embed=embed
+    )
+
+    await interaction.response.send_message(
+        "✅ Booster notification berhasil dites!",
+        ephemeral=True
+    )
 # =========================
 # TIKTOK WEBHOOK
 # =========================
