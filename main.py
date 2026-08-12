@@ -66,7 +66,7 @@ async def create_welcome_image(member):
     nama = member.display_name
 
     try:
-        font_nama = ImageFont.truetype("arialbd.ttf", 250)
+        font_nama = ImageFont.truetype("arialbd.ttf", 400)
     except:
         font_nama = ImageFont.load_default()
 
