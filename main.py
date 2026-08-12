@@ -96,7 +96,7 @@ except:
     output.seek(0)
 
         return discord.File(
-        buffer,
+        output,
         filename="welcome.png"
     )
 
