@@ -474,6 +474,51 @@ async def on_member_join(member):
             file=banner
         )
 
+
+# ==================================================
+# 💎 EVERLIGHT SERVER BOOSTER NOTIFICATION
+# ==================================================
+
+@bot.event
+async def on_member_update(before, after):
+
+    # Member baru saja mulai boost server
+    if before.premium_since is None and after.premium_since is not None:
+
+        channel = discord.utils.get(
+            after.guild.text_channels,
+            name="booster"
+        )
+
+        if channel is None:
+            print("Channel #booster tidak ditemukan.")
+            return
+
+        embed = discord.Embed(
+            title="💎 EVERLIGHT SERVER BOOST 💎",
+            description=(
+                f"✨ Thank you {after.mention}! ✨\n\n"
+                f"You just boosted **{after.guild.name}**!\n\n"
+                f"Your support helps Everlight shine even brighter. 🌙✨\n"
+                f"Thank you for supporting our community!"
+            ),
+            color=discord.Color.from_rgb(255, 105, 180)
+        )
+
+        embed.set_thumbnail(
+            url=after.display_avatar.url
+        )
+
+        embed.set_footer(
+            text="Everlight Virtual • Keep Your Light Alive ✨"
+        )
+
+        await channel.send(
+            content=f"💎 {after.mention}",
+            embed=embed
+        )
+
+        print(f"BOOST DETECTED: {after}")
 # =========================
 # TIKTOK WEBHOOK
 # =========================
