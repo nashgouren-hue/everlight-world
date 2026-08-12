@@ -60,16 +60,15 @@ async def create_welcome_image(member):
         mask
     )
 
-  # Tulis nama Discord
-draw = ImageDraw.Draw(image)
+    # Tulis nama Discord
+    draw = ImageDraw.Draw(image)
+    nama = member.display_name
 
-nama = member.display_name
+    try:
+        font_nama = ImageFont.truetype("arialbd.ttf", 100)
+    except:
+        font_nama = ImageFont.load_default()
 
-try:
-    font_nama = ImageFont.truetype("arialbd.ttf", 100)
-except:
-    font_nama = ImageFont.load_default()
- 
     bbox = draw.textbbox(
         (0, 0),
         nama,
