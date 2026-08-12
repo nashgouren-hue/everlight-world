@@ -69,6 +69,7 @@ async def create_welcome_image(member):
     font_nama = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 100)
 except:
     font_nama = ImageFont.load_default()
+ 
     bbox = draw.textbbox(
         (0, 0),
         nama,
