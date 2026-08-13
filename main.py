@@ -653,12 +653,9 @@ async def tiktok_verify_file(request):
 
 
 async def tiktok_verify_terms(request):
-    verification = "tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l"
     return web.Response(
-        body=verification.encode("utf-8"),
-        headers={
-            "Content-Type": "text/plain; charset=utf-8"
-        }
+        text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l",
+        content_type="text/plain"
     )
 
 
