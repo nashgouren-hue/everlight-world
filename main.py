@@ -671,10 +671,11 @@ async def start_web_server():
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
     tiktok_verify_file
 )
-    app.router.add_get(
-        "/terms/tiktok4qL77aFCylLLUtAIB6s3QVzGyUKHA07I.txt",
-        tiktok_verify_terms
-    )
+   app.router.add_get(
+    "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
+    tiktok_verify_terms
+)
+
 
     runner = web.AppRunner(app)
     await runner.setup()
