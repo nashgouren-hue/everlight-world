@@ -641,13 +641,21 @@ async def privacy_page(request):
     </body>
     </html>
     """
-    return web.Response(text=html, content_type="text/html")    
+    return web.Response(text=html, content_type="text/html")  
+async def tiktok_verify_file(request):
+    return web.FileResponse(
+        "./tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt"
+    )
 async def start_web_server():
     app = web.Application()
 
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
     app.router.add_get("/terms", terms_page)
     app.router.add_get("/privacy", privacy_page)
+    app.router.add_get(
+        "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
+    tiktok_verify_file
+)
 
     runner = web.AppRunner(app)
     await runner.setup()
