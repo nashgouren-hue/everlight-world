@@ -583,7 +583,7 @@ async def tiktok_webhook(request):
     except Exception as e:
         print("TikTok Webhook Error:", e)
         return web.Response(text="OK", status=200)
-    async def terms_page(request):
+async def terms_page(request):
     html = """
     <html>
     <head><title>Everlight Bot - Terms of Service</title></head>
