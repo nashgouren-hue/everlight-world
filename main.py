@@ -657,7 +657,12 @@ async def tiktok_verify_terms(request):
         text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l",
         content_type="text/plain"
     )
-
+async def tiktok_verify_privacy(request):
+    return web.Response(
+        text="tiktok-developers-site-verification=9AMaLRt3zKWPVyXzfmilEGnYrfXMS5WFJ",
+        content_type="text/plain"
+    )
+    
 
 async def start_web_server():
     app = web.Application()
@@ -675,7 +680,11 @@ async def start_web_server():
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
         tiktok_verify_terms
     )
-
+    app.router.add_get(
+        "/privacy/tiktok9AMaLRt3zKWPVyXzfmilEGnYrfXMS5WFJ.txt",
+        tiktok_verify_privacy
+    )
+    
     runner = web.AppRunner(app)
     await runner.setup()
 
