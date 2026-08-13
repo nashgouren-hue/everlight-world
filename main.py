@@ -643,8 +643,12 @@ async def privacy_page(request):
     """
     return web.Response(text=html, content_type="text/html")  
 async def tiktok_verify_file(request):
-    return web.FileResponse(
-        "./tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt"
+    with open("tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt", "r") as f:
+        content = f.read()
+
+    return web.Response(
+        text=content,
+        content_type="text/plain"
     )
 async def start_web_server():
     app = web.Application()
