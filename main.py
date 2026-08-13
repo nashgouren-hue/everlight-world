@@ -666,16 +666,15 @@ async def start_web_server():
     app.router.add_get("/terms", terms_page)
     app.router.add_get("/privacy", privacy_page)
 
-    
     app.router.add_get(
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
-    tiktok_verify_file
-)
-   app.router.add_get(
-    "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
-    tiktok_verify_terms
-)
+        tiktok_verify_file
+    )
 
+    app.router.add_get(
+        "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
+        tiktok_verify_terms
+    )
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -685,7 +684,7 @@ async def start_web_server():
     await site.start()
 
     print(f"TikTok Webhook server berjalan di port {port}")
-
+    
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN belum diisi di file .env")
 
