@@ -650,16 +650,34 @@ async def tiktok_verify_file(request):
             "Content-Type": "text/plain; charset=utf-8"
         }
     )
+
+
+async def tiktok_verify_terms(request):
+    verification = "tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l"
+    return web.Response(
+        body=verification.encode("utf-8"),
+        headers={
+            "Content-Type": "text/plain; charset=utf-8"
+        }
+    )
+
+
 async def start_web_server():
     app = web.Application()
 
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
     app.router.add_get("/terms", terms_page)
     app.router.add_get("/privacy", privacy_page)
+
+    
     app.router.add_get(
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
     tiktok_verify_file
 )
+    app.router.add_get(
+        "/terms/tiktok4qL77aFCylLLUtAIB6s3QVzGyUKHA07I.txt",
+        tiktok_verify_terms
+    )
 
     runner = web.AppRunner(app)
     await runner.setup()
