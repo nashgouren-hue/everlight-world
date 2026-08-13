@@ -643,9 +643,12 @@ async def privacy_page(request):
     """
     return web.Response(text=html, content_type="text/html")  
 async def tiktok_verify_file(request):
+    verification = "tiktok-developers-site-verification=7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL"
     return web.Response(
-        text="tiktok-developers-site-verification=7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL",
-        content_type="text/plain"
+        body=verification.encode("utf-8"),
+        headers={
+            "Content-Type": "text/plain; charset=utf-8"
+        }
     )
 async def start_web_server():
     app = web.Application()
