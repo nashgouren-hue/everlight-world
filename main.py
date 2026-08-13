@@ -583,9 +583,71 @@ async def tiktok_webhook(request):
     except Exception as e:
         print("TikTok Webhook Error:", e)
         return web.Response(text="OK", status=200)
+    async def terms_page(request):
+    html = """
+    <html>
+    <head><title>Everlight Bot - Terms of Service</title></head>
+    <body>
+        <h1>Everlight Bot - Terms of Service</h1>
+        <p>Last updated: August 13, 2026</p>
+
+        <h2>1. About Everlight Bot</h2>
+        <p>Everlight Bot is a Discord community bot operated by Everlight Virtual.
+        It provides community features and TikTok-related notifications.</p>
+
+        <h2>2. Use of the Service</h2>
+        <p>Users may use Everlight Bot for its intended community and notification
+        features. Misuse, abuse, or attempts to disrupt the service are prohibited.</p>
+
+        <h2>3. TikTok Integration</h2>
+        <p>Everlight Bot may use TikTok APIs to access authorized TikTok information
+        and public content for notification features.</p>
+
+        <h2>4. Availability</h2>
+        <p>The service may be changed, suspended, or discontinued at any time.</p>
+
+        <h2>5. Contact</h2>
+        <p>For questions regarding Everlight Bot, contact Everlight Virtual.</p>
+    </body>
+    </html>
+    """
+    return web.Response(text=html, content_type="text/html")
+
+
+async def privacy_page(request):
+    html = """
+    <html>
+    <head><title>Everlight Bot - Privacy Policy</title></head>
+    <body>
+        <h1>Everlight Bot - Privacy Policy</h1>
+        <p>Last updated: August 13, 2026</p>
+
+        <h2>Information We Process</h2>
+        <p>Everlight Bot may process TikTok account identifiers, basic profile
+        information, and public video information when authorized.</p>
+
+        <h2>How Information Is Used</h2>
+        <p>Information is used to provide TikTok content notifications and
+        community features in the Everlight Virtual Discord server.</p>
+
+        <h2>Data Sharing</h2>
+        <p>Everlight Bot does not sell personal information.</p>
+
+        <h2>Data Retention</h2>
+        <p>Information is retained only as necessary to operate the service.</p>
+
+        <h2>Contact</h2>
+        <p>For privacy questions, contact Everlight Virtual.</p>
+    </body>
+    </html>
+    """
+    return web.Response(text=html, content_type="text/html")    
 async def start_web_server():
     app = web.Application()
+
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
+    app.router.add_get("/terms", terms_page)
+    app.router.add_get("/privacy", privacy_page)
 
     runner = web.AppRunner(app)
     await runner.setup()
