@@ -681,7 +681,7 @@ async def start_web_server():
         tiktok_verify_terms
     )
 
-        app.router.add_get(
+    app.router.add_get(
         "/tiktok9AMaLRt3zKWPVyXzfmiIEGnYrfXMS5WFJ.txt",
         tiktok_verify_privacy
     )
