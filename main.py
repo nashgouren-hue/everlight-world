@@ -682,7 +682,7 @@ async def start_web_server():
     )
 
     app.router.add_get(
-        "/tiktok9AMaLRt3zKWPVyXzfmiIEGnYrfXMS5WFJ.txt",
+        "/privacy/tiktok9AMaLRt3zKWPVyXzfmilEGnYrfXMS5WFJ.txt",
         tiktok_verify_privacy
     )
     
