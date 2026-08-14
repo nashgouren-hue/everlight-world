@@ -670,7 +670,29 @@ async def start_web_server():
     async def test_route(request):
         return web.Response(text="EVERLIGHT TEST OK")
 
+        async def verify_terms_txt(request):
+        return web.Response(
+            text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
+            content_type="text/plain"
+        )
+
+    async def verify_privacy_txt(request):
+        return web.Response(
+            text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
+            content_type="text/plain"
+        )
+        
     app.router.add_get("/test", test_route)
+
+        app.router.add_get(
+        "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
+        verify_terms_txt
+    )
+
+    app.router.add_get(
+        "/privacy/tiktok9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ.txt",
+        verify_privacy_txt
+    )
 
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
     app.router.add_get("/terms", terms_page)
@@ -679,16 +701,6 @@ async def start_web_server():
     app.router.add_get(
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
         tiktok_verify_file
-    )
-
-    app.router.add_get(
-        "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
-        tiktok_verify_terms
-    )
-
-    app.router.add_get(
-        "/privacy/tiktok9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ.txt",
-        tiktok_verify_privacy
     )
     
     runner = web.AppRunner(app)
