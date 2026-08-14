@@ -670,7 +670,7 @@ async def start_web_server():
     async def test_route(request):
         return web.Response(text="EVERLIGHT TEST OK")
 
-        async def verify_terms_txt(request):
+    async def verify_terms_txt(request):
         return web.Response(
             text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
             content_type="text/plain"
@@ -684,7 +684,7 @@ async def start_web_server():
         
     app.router.add_get("/test", test_route)
 
-        app.router.add_get(
+    app.router.add_get(
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
         verify_terms_txt
     )
