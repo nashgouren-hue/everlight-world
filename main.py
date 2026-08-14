@@ -667,10 +667,15 @@ async def tiktok_verify_privacy(request):
 async def start_web_server():
     app = web.Application()
 
+    async def test_route(request):
+        return web.Response(text="EVERLIGHT TEST OK")
+
+    app.router.add_get("/test", test_route)
+
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
     app.router.add_get("/terms", terms_page)
     app.router.add_get("/privacy", privacy_page)
-
+    
     app.router.add_get(
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
         tiktok_verify_file
