@@ -684,6 +684,11 @@ async def start_web_server():
         "/privacy/tiktok9AMaLRt3zKWPVyXzfmilEGnYrfXMS5WFJ.txt",
         tiktok_verify_privacy
     )
+
+        app.router.add_get(
+        "/tiktok9AMaLRt3zKWPVyXzfmiIEGnYrfXMS5WFJ.txt",
+        tiktok_verify_privacy
+    )
     
     runner = web.AppRunner(app)
     await runner.setup()
