@@ -680,10 +680,6 @@ async def start_web_server():
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA07l.txt",
         tiktok_verify_terms
     )
-    app.router.add_get(
-        "/privacy/tiktok9AMaLRt3zKWPVyXzfmilEGnYrfXMS5WFJ.txt",
-        tiktok_verify_privacy
-    )
 
         app.router.add_get(
         "/tiktok9AMaLRt3zKWPVyXzfmiIEGnYrfXMS5WFJ.txt",
