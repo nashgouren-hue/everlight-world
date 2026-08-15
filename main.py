@@ -682,7 +682,20 @@ async def start_web_server():
             content_type="text/plain"
         )
         
+    async def tiktok_callback(request):
+        code = request.query.get("code")
+        error = request.query.get("error")
+
+        if error:
+            return web.Response(text=f"TikTok Login Error: {error}")
+
+        if code:
+            return web.Response(text="TikTok Login berhasil. Authorization code diterima.")
+
+        return web.Response(text="TikTok callback ready")
+        
     app.router.add_get("/test", test_route)
+    app.router.add_get("/tiktok/callback", tiktok_callback)  
 
     app.router.add_get(
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
