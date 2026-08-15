@@ -670,6 +670,12 @@ async def start_web_server():
     async def test_route(request):
         return web.Response(text="EVERLIGHT TEST OK")
 
+    async def verify_root_txt(request):
+        return web.Response(
+            text="tiktok-developers-site-verification=lw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P",
+            content_type="text/plain"
+        )
+        
     async def verify_terms_txt(request):
         return web.Response(
             text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
@@ -695,6 +701,12 @@ async def start_web_server():
         return web.Response(text="TikTok callback ready")
         
     app.router.add_get("/test", test_route)
+
+    app.router.add_get(
+        "/tiktokIw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P.txt",
+        verify_root_txt
+    )
+    
     app.router.add_get("/tiktok/callback", tiktok_callback)  
 
     app.router.add_get(
