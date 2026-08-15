@@ -703,9 +703,9 @@ async def start_web_server():
     app.router.add_get("/test", test_route)
     app.router.add_get("/cek-tiktok", verify_root_txt)
     
-    app.router.add_get(
-        "/tiktokIw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P.txt",
-        verify_root_txt
+   app.router.add_get(
+       "/{filename}.txt",
+       verify_root_txt
     )
     
     app.router.add_get("/tiktok/callback", tiktok_callback)  
