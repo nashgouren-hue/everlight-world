@@ -701,25 +701,6 @@ async def start_web_server():
         return web.Response(text="TikTok callback ready")
 
 
-     async def home_page(request):
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Everlight World</title>
-        </head>
-        <body>
-            <h1>Everlight World</h1>
-            <p>Connect your TikTok account with Everlight Bot.</p>
-
-            <a href="/tiktok/login">
-                <button>Login with TikTok</button>
-            </a>
-        </body>
-        </html>
-        """
-        return web.Response(text=html, content_type="text/html")
-        
     app.router.add_get("/test", test_route)
     app.router.add_get("/", home_page)
     app.router.add_get("/cek-tiktok", verify_root_txt)
