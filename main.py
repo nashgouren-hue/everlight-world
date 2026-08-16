@@ -701,7 +701,7 @@ async def start_web_server():
         return web.Response(text="TikTok callback ready")
 
 
-        async def home_page(request):
+     async def home_page(request):
         html = """
         <!DOCTYPE html>
         <html>
