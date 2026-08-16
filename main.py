@@ -713,11 +713,43 @@ async def start_web_server():
         if error:
             return web.Response(text=f"TikTok Login Error: {error}")
 
-        if code:
-            return web.Response(text="TikTok Login berhasil. Authorization code diterima.")
+        if not code:
+            return web.Response(text="Authorization code tidak ditemukan.")
 
-        return web.Response(text="TikTok callback ready")
+        client_key = os.getenv("TIKTOK_CLIENT_KEY")
+        client_secret = os.getenv("TIKTOK_CLIENT_SECRET")
 
+        redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
+
+        token_url = "https://open.tiktokapis.com/v2/oauth/token/"
+
+        data = {
+            "client_key": client_key,
+            "client_secret": client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }
+
+     async with aiohttp.ClientSession() as session:
+        async with session.post(token_url, data=data) as response:
+                result = await response.json()
+
+        if "access_token" not in result:
+            return web.Response(
+                text=f"Gagal mendapatkan TikTok access token: {result}"
+            )
+
+        access_token = result["access_token"]
+        refresh_token = result.get("refresh_token")
+        open_id = result.get("open_id")
+
+        print("TikTok authorization berhasil!")
+        print(f"TikTok Open ID: {open_id}")
+
+        return web.Response(
+            text="TikTok berhasil terhubung ke Everlight Bot!"
+        )
     async def home_page(request):
         html = """
         <!DOCTYPE html>
