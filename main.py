@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 import discord
 import io
 import sqlite3
@@ -687,7 +688,24 @@ async def start_web_server():
             text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
             content_type="text/plain"
         )
-        
+
+     async def tiktok_login(request):
+        client_key = os.getenv("TIKTOK_CLIENT_KEY")
+
+        redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
+
+        params = {
+            "client_key": client_key,
+            "scope": "user.info.basic,video.list",
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "state": "everlight"
+        }
+
+        login_url = "https://www.tiktok.com/v2/auth/authorize/?" + urllib.parse.urlencode(params)
+
+        raise web.HTTPFound(login_url)
+    
     async def tiktok_callback(request):
         code = request.query.get("code")
         error = request.query.get("error")
@@ -720,6 +738,7 @@ async def start_web_server():
 
     app.router.add_get("/test", test_route)
     app.router.add_get("/", home_page)
+    app.router.add_get("/tiktok/login", tiktok_login)
     app.router.add_get("/cek-tiktok", verify_root_txt)
     
     app.router.add_get(
