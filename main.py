@@ -720,7 +720,6 @@ async def start_web_server():
         client_secret = os.getenv("TIKTOK_CLIENT_SECRET")
 
         redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
-
         token_url = "https://open.tiktokapis.com/v2/oauth/token/"
 
         data = {
@@ -731,8 +730,8 @@ async def start_web_server():
             "redirect_uri": redirect_uri
         }
 
-     async with aiohttp.ClientSession() as session:
-        async with session.post(token_url, data=data) as response:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(token_url, data=data) as response:
                 result = await response.json()
 
         if "access_token" not in result:
@@ -750,6 +749,7 @@ async def start_web_server():
         return web.Response(
             text="TikTok berhasil terhubung ke Everlight Bot!"
         )
+        
     async def home_page(request):
         html = """
         <!DOCTYPE html>
