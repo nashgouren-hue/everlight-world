@@ -39,7 +39,7 @@ class EverlightBot(discord.Client):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
 
-    async def setup_hook(self):
+async def setup_hook(self):
         await self.tree.sync()
         await start_web_server()
 bot = EverlightBot()
@@ -779,6 +779,23 @@ async def start_web_server():
 
     async def test_route(request):
         return web.Response(text="EVERLIGHT TEST OK")
+    async def home_page(request):
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Everlight World</title>
+        </head>
+        <body>
+            <h1>Everlight World</h1>
+            <p>Connect your TikTok account with Everlight Bot.</p>
+            <a href="/tiktok/login">
+                <button>Login with TikTok</button>
+            </a>
+        </body>
+        </html>
+        """
+        return web.Response(text=html, content_type="text/html")
 
     app.router.add_get("/test", test_route)
     app.router.add_get("/", home_page)
