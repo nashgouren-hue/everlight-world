@@ -1,4 +1,5 @@
 import os
+import json
 import urllib.parse
 import discord
 import aiohttp
@@ -744,10 +745,19 @@ async def start_web_server():
         refresh_token = result.get("refresh_token")
         open_id = result.get("open_id")
 
-        print("TikTok authorization berhasil!")
-        print(f"TikTok Open ID: {open_id}")
+        token_data = {
+    "access_token": access_token,
+    "refresh_token": refresh_token,
+    "open_id": open_id
+}
 
-        return web.Response(
+    with open("tiktok_token.json", "w") as f:
+        json.dump(token_data, f)
+        
+    print("TikTok authorization berhasil!")
+    print(f"TikTok Open ID: {open_id}")
+
+    return web.Response(
             text="TikTok berhasil terhubung ke Everlight Bot!"
         )
         
