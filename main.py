@@ -6,11 +6,21 @@ import aiohttp
 import io
 import sqlite3
 from discord import app_commands
+from discord.ext import tasks
 from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
 
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+LIVE_CHANNEL_ID = 1513414157897043998
+
+TIKTOK_LIVE_ACCOUNTS = [
+    "kurocatkurimu",
+    "nashgouren_",
+    "hiharuhere",
+    "louiegospellvt",
+    "everlightvirtual",
+]
 # ==========================================
 # EVERLIGHT MODERATION DATABASE
 # ==========================================
@@ -121,6 +131,9 @@ async def create_welcome_image(member):
         filename="welcome.png"
     )
 
+@tasks.loop(seconds=60)
+async def live_checker():
+    print("🔎 Mengecek status TikTok LIVE...")
 
 @bot.event
 async def on_ready():
