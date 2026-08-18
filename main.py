@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 import discord
+import aiohttp
 import io
 import sqlite3
 from discord import app_commands
