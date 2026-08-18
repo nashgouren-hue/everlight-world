@@ -7,6 +7,7 @@ import io
 import sqlite3
 from discord import app_commands
 from discord.ext import tasks
+from TikTokLive import TikTokLiveClient
 from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
 
@@ -131,10 +132,36 @@ async def create_welcome_image(member):
         filename="welcome.png"
     )
 
+live_status = {}
+
 @tasks.loop(seconds=60)
 async def live_checker():
-    print("🔎 Mengecek status TikTok LIVE...")
+    channel = bot.get_channel(LIVE_CHANNEL_ID)
 
+    if channel is None:
+        print("❌ Channel LIVE Discord tidak ditemukan.")
+        return
+
+    for username in TIKTOK_LIVE_ACCOUNTS:
+        try:
+            client = TikTokLiveClient(unique_id=f"@{username}")
+
+            is_live = await client.is_live()
+
+            sebelumnya_live = live_status.get(username, False)
+
+            print(f"TikTok @{username} | LIVE: {is_live}")
+
+            if is_live and not sebelumnya_live:
+                await channel.send(
+                    f"🔴 **@{username} sedang LIVE di TikTok!**\n"
+                    f"https://www.tiktok.com/@{username}/live"
+                )
+
+            live_status[username] = is_live
+
+        except Exception as e:
+            print(f"❌ Gagal cek @{username}: {e}")
 @bot.event
 async def on_ready():
     print(f"==============================")
@@ -142,7 +169,9 @@ async def on_ready():
     print(f"Login sebagai: {bot.user}")
     print(f"==============================")
 
-
+    if not live_checker.is_running():
+        live_checker.start()
+        
 @bot.tree.command(name="hello", description="Say hello to Everlight!")
 async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(
