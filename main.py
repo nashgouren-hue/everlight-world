@@ -665,11 +665,6 @@ async def tiktok_verify_privacy(request):
         text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
         content_type="text/plain"
     )
-    
-
-async def start_web_server():
-    app = web.Application()
-
     async def test_route(request):
         return web.Response(text="EVERLIGHT TEST OK")
 
@@ -779,6 +774,10 @@ async def start_web_server():
         """
         return web.Response(text=html, content_type="text/html")
 
+async def start_web_server():
+    app = web.Application()
+
+    
     app.router.add_get("/test", test_route)
     app.router.add_get("/", home_page)
     app.router.add_get("/tiktok/login", tiktok_login)
