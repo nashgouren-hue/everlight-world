@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Role - Everlight</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b0b14;
+            color: white;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #11111d;
+            padding: 28px 20px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #aaa9c9;
+            font-size: 14px;
+            margin-bottom: 35px;
+        }
+
+        .menu {
+            display: block;
+            color: #ddd;
+            text-decoration: none;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .menu:hover {
+            background: #23213b;
+        }
+
+        .menu.active {
+            background: #3a2f6b;
+            color: white;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 42px;
+            width: calc(100% - 250px);
+            max-width: 1100px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 36px;
+        }
+
+        .description {
+            color: #aaa9c9;
+            margin-top: 8px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #151522;
+            border: 1px solid #29283b;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 22px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 9px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            border-radius: 9px;
+            border: 1px solid #39384c;
+            background: #0e0e19;
+            color: white;
+            font-size: 16px;
+        }
+
+        .hint {
+            color: #9291ad;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .save {
+            margin-top: 25px;
+            border: none;
+            border-radius: 9px;
+            padding: 13px 22px;
+            background: #6c52d9;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .save:hover {
+            opacity: 0.9;
+        }
+
+        .success {
+            background: #123b29;
+            border: 1px solid #1d744c;
+            color: #8ff0b8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">✨ EVERLIGHT</div>
+    <div class="subtitle">Bot Control Center</div>
+
+    <a class="menu" href="/">
+        🏠 Overview
+    </a>
+
+    <a class="menu" href="/welcome">
+        👋 Welcome
+    </a>
+
+    <a class="menu active" href="/autorole">
+        🌙 Auto Role
+    </a>
+
+    <a class="menu" href="#">
+        🎵 TikTok
+    </a>
+
+    <a class="menu" href="#">
+        🛡️ Moderation
+    </a>
+
+    <a class="menu" href="#">
+        ⚙️ Settings
+    </a>
+
+</div>
+
+
+<div class="content">
+
+    <h1>🌙 Auto Role</h1>
+
+    <div class="description">
+        Atur role yang otomatis diberikan kepada member baru Everlight.
+    </div>
+
+    {% if request.args.get("saved") %}
+    <div class="success">
+        ✅ Auto Role berhasil disimpan!
+    </div>
+    {% endif %}
+
+
+    <div class="panel">
+
+        <h2>🌙 Member Auto Role</h2>
+
+        <form method="POST">
+
+            <label>Discord Role Name</label>
+
+            <input
+                type="text"
+                name="auto_role"
+                value="{{ settings.auto_role }}"
+                placeholder="moonwalker"
+                required
+            >
+
+            <div class="hint">
+                Masukkan nama role Discord persis seperti yang ada di server.
+                Contoh: moonwalker
+            </div>
+
+            <button class="save" type="submit">
+                💾 Save Auto Role
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>💡 Cara Kerja</h2>
+
+        <p>
+            Ketika member baru masuk ke server Discord Everlight,
+            bot akan otomatis memberikan role yang dipilih di atas.
+        </p>
+
+        <p class="hint">
+            Bot Everlight harus memiliki permission Manage Roles dan posisi
+            role bot harus berada di atas role yang akan diberikan.
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+</html>

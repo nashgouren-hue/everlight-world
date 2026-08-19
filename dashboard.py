@@ -72,6 +72,22 @@ def welcome():
         settings=settings
     )
 
+@app.route("/autorole", methods=["GET", "POST"])
+def autorole():
+
+    settings = load_settings()
+
+    if request.method == "POST":
+        settings["auto_role"] = request.form["auto_role"]
+
+        save_settings(settings)
+
+        return redirect(url_for("autorole", saved="1"))
+
+    return render_template(
+        "autorole.html",
+        settings=settings
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
