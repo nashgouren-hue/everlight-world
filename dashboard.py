@@ -16,6 +16,20 @@ def load_settings():
     "username_y": 215,
     "welcome_channel": "welcome",
     "auto_role": "moonwalker",
+
+"tiktok_channel": "livenotification",
+"tiktok_kurocat": "@kurocatkurimu",
+"enable_kurocat": True,
+"tiktok_nash": "@nashgouren_",
+"enable_nash": True,
+"tiktok_haru": "@hiharuhere",
+"enable_haru": True,
+"tiktok_louise": "@louiegospellvt",
+"enable_louise": True,
+"tiktok_everlight": "@everlightvirtual",
+"enable_everlight": True,
+"tiktok_message": "🔴 {creator} sedang LIVE di TikTok!",
+
     "message": """✨ **A New Star Has Appeared** ✨
 Selamat datang, {member} ✨ Kamu telah memasuki **Everlight Virtual**, tempat di mana kreativitas, persahabatan, dan mimpi bersinar bersama.
 
@@ -72,12 +86,42 @@ def welcome():
         settings=settings
     )
 
-@app.route("/autorole", methods=["GET", "POST"])
-def autorole():
+@app.route("/tiktok", methods=["GET", "POST"])
+def tiktok():
 
     settings = load_settings()
 
     if request.method == "POST":
+
+        settings["tiktok_channel"] = request.form["tiktok_channel"]
+
+        settings["tiktok_kurocat"] = request.form["tiktok_kurocat"]
+        settings["enable_kurocat"] = "enable_kurocat" in request.form
+
+        settings["tiktok_nash"] = request.form["tiktok_nash"]
+        settings["enable_nash"] = "enable_nash" in request.form
+
+        settings["tiktok_haru"] = request.form["tiktok_haru"]
+        settings["enable_haru"] = "enable_haru" in request.form
+
+        settings["tiktok_louise"] = request.form["tiktok_louise"]
+        settings["enable_louise"] = "enable_louise" in request.form
+
+        settings["tiktok_everlight"] = request.form["tiktok_everlight"]
+        settings["enable_everlight"] = "enable_everlight" in request.form
+
+        settings["tiktok_message"] = request.form["tiktok_message"]
+
+        save_settings(settings)
+
+        return redirect(
+            url_for("tiktok", saved="1")
+        )
+
+    return render_template(
+        "tiktok.html",
+        settings=settings
+    )    if request.method == "POST":
         settings["auto_role"] = request.form["auto_role"]
 
         save_settings(settings)

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Settings - Everlight</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b0b14;
+            color: white;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #11111d;
+            padding: 28px 20px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #aaa9c9;
+            font-size: 14px;
+            margin-bottom: 35px;
+        }
+
+        .menu {
+            display: block;
+            color: #ddd;
+            text-decoration: none;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .menu:hover {
+            background: #23213b;
+        }
+
+        .menu.active {
+            background: #3a2f6b;
+            color: white;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 42px;
+            width: calc(100% - 250px);
+            max-width: 1150px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 36px;
+        }
+
+        .description {
+            color: #aaa9c9;
+            margin-top: 8px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #151522;
+            border: 1px solid #29283b;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 22px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 9px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            border-radius: 9px;
+            border: 1px solid #39384c;
+            background: #0e0e19;
+            color: white;
+            font-size: 15px;
+        }
+
+        .account {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 14px;
+        }
+
+        .account label {
+            margin-top: 0;
+        }
+
+        .toggle-box {
+            background: #0e0e19;
+            border: 1px solid #39384c;
+            border-radius: 9px;
+            padding: 13px;
+            text-align: center;
+        }
+
+        .toggle-box input {
+            transform: scale(1.3);
+            margin-right: 7px;
+        }
+
+        .hint {
+            color: #9291ad;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .save {
+            margin-top: 25px;
+            border: none;
+            border-radius: 9px;
+            padding: 14px 24px;
+            background: #6c52d9;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .save:hover {
+            background: #7c63e8;
+        }
+
+        .success {
+            background: #123b29;
+            border: 1px solid #1d744c;
+            color: #8ff0b8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">✨ EVERLIGHT</div>
+    <div class="subtitle">Bot Control Center</div>
+
+    <a class="menu" href="/">🏠 Overview</a>
+
+    <a class="menu" href="/welcome">👋 Welcome</a>
+
+    <a class="menu" href="/autorole">🌙 Auto Role</a>
+
+    <a class="menu active" href="/tiktok">🎵 TikTok</a>
+
+    <a class="menu" href="#">🛡️ Moderation</a>
+
+    <a class="menu" href="#">⚙️ Settings</a>
+
+</div>
+
+
+<div class="content">
+
+    <h1>🎵 TikTok Settings</h1>
+
+    <div class="description">
+        Atur akun TikTok Everlight dan notifikasi Live ke Discord.
+    </div>
+
+    {% if request.args.get("saved") %}
+    <div class="success">
+        ✅ TikTok Settings berhasil disimpan!
+    </div>
+    {% endif %}
+
+
+    <form method="POST">
+
+        <div class="panel">
+
+            <h2>📢 Live Notification</h2>
+
+            <label>Discord Notification Channel</label>
+
+            <input
+                type="text"
+                name="tiktok_channel"
+                value="{{ settings.tiktok_channel }}"
+                placeholder="livenotification"
+            >
+
+            <div class="hint">
+                Masukkan nama channel tanpa #.
+                Contoh: livenotification
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>⭐ TikTok Accounts</h2>
+
+            <div class="account">
+                <div>
+                    <label>Kurocat Kurimu</label>
+                    <input
+                        type="text"
+                        name="tiktok_kurocat"
+                        value="{{ settings.tiktok_kurocat }}"
+                        placeholder="@kurocatkurimu"
+                    >
+                </div>
+
+                <div class="toggle-box">
+                    <input
+                        type="checkbox"
+                        name="enable_kurocat"
+                        {% if settings.enable_kurocat %}checked{% endif %}
+                    >
+                    ON
+                </div>
+            </div>
+
+
+            <div class="account">
+                <div>
+                    <label>Nash Gouren</label>
+                    <input
+                        type="text"
+                        name="tiktok_nash"
+                        value="{{ settings.tiktok_nash }}"
+                        placeholder="@nashgouren_"
+                    >
+                </div>
+
+                <div class="toggle-box">
+                    <input
+                        type="checkbox"
+                        name="enable_nash"
+                        {% if settings.enable_nash %}checked{% endif %}
+                    >
+                    ON
+                </div>
+            </div>
+
+
+            <div class="account">
+                <div>
+                    <label>Ikkito Haru</label>
+                    <input
+                        type="text"
+                        name="tiktok_haru"
+                        value="{{ settings.tiktok_haru }}"
+                        placeholder="@hiharuhere"
+                    >
+                </div>
+
+                <div class="toggle-box">
+                    <input
+                        type="checkbox"
+                        name="enable_haru"
+                        {% if settings.enable_haru %}checked{% endif %}
+                    >
+                    ON
+                </div>
+            </div>
+
+
+            <div class="account">
+                <div>
+                    <label>Louise Gospell</label>
+                    <input
+                        type="text"
+                        name="tiktok_louise"
+                        value="{{ settings.tiktok_louise }}"
+                        placeholder="@louiegospellvt"
+                    >
+                </div>
+
+                <div class="toggle-box">
+                    <input
+                        type="checkbox"
+                        name="enable_louise"
+                        {% if settings.enable_louise %}checked{% endif %}
+                    >
+                    ON
+                </div>
+            </div>
+
+
+            <div class="account">
+                <div>
+                    <label>Everlight Virtual</label>
+                    <input
+                        type="text"
+                        name="tiktok_everlight"
+                        value="{{ settings.tiktok_everlight }}"
+                        placeholder="@everlightvirtual"
+                    >
+                </div>
+
+                <div class="toggle-box">
+                    <input
+                        type="checkbox"
+                        name="enable_everlight"
+                        {% if settings.enable_everlight %}checked{% endif %}
+                    >
+                    ON
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>💬 Live Message</h2>
+
+            <label>Notification Message</label>
+
+            <input
+                type="text"
+                name="tiktok_message"
+                value="{{ settings.tiktok_message }}"
+                placeholder="🔴 {creator} sedang LIVE di TikTok!"
+            >
+
+            <div class="hint">
+                Gunakan {creator} untuk nama VTuber.
+            </div>
+
+        </div>
+
+
+        <button class="save" type="submit">
+            💾 Save TikTok Settings
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>
