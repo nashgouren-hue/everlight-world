@@ -86,13 +86,27 @@ def welcome():
         settings=settings
     )
 
-@app.route("/tiktok", methods=["GET", "POST"])
-def tiktok():
-
+@app.route("/autorole", methods=["GET", "POST"])
+def autorole():
     settings = load_settings()
 
     if request.method == "POST":
+        settings["auto_role"] = request.form["auto_role"]
+        save_settings(settings)
 
+        return redirect(url_for("autorole", saved="1"))
+
+    return render_template(
+        "autorole.html",
+        settings=settings
+    )
+
+
+@app.route("/tiktok", methods=["GET", "POST"])
+def tiktok():
+    settings = load_settings()
+
+    if request.method == "POST":
         settings["tiktok_channel"] = request.form["tiktok_channel"]
 
         settings["tiktok_kurocat"] = request.form["tiktok_kurocat"]
@@ -114,22 +128,10 @@ def tiktok():
 
         save_settings(settings)
 
-        return redirect(
-            url_for("tiktok", saved="1")
-        )
+        return redirect(url_for("tiktok", saved="1"))
 
     return render_template(
         "tiktok.html",
-        settings=settings
-    )    if request.method == "POST":
-        settings["auto_role"] = request.form["auto_role"]
-
-        save_settings(settings)
-
-        return redirect(url_for("autorole", saved="1"))
-
-    return render_template(
-        "autorole.html",
         settings=settings
     )
 
