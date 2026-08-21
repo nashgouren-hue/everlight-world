@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 import json
 import os
+import requests
 
 app = Flask(__name__)
 
@@ -148,6 +149,91 @@ def tiktok():
         "tiktok.html",
         settings=settings
     )
+
+@app.route("/tiktok/test", methods=["POST"])
+def test_tiktok_notification():
+    webhook_url = os.environ.get("DISCORD_LIVE_WEBHOOK")
+
+    if not webhook_url:
+        return "DISCORD_LIVE_WEBHOOK belum diatur.", 500
+
+    creator = "Kurocat Kurimu"
+    live_url = "https://www.tiktok.com/@kurocatkurimu/live"
+
+    title = request.form.get(
+        "notif_title",
+        "🔴 {creator} IS LIVE!"
+    ).replace("{creator}", creator)
+
+    message = request.form.get(
+        "notif_message",
+        "✨ {creator} sedang LIVE di TikTok!"
+    ).replace("{creator}", creator).replace("{url}", live_url)
+
+    banner = request.form.get("notif_banner", "").strip()
+    button_text = request.form.get("notif_button", "🔴 Watch Live")
+    color_hex = request.form.get("notif_color", "#ff3355").lstrip("#")
+
+    try:
+        color = int(color_hex, 16)
+    except ValueError:
+        color = 0xFF3355
+
+    mention_setting = request.form.get("notif_mention", "none")
+
+    if mention_setting == "everyone":
+        content = "@everyone"
+    elif mention_setting == "here":
+        content = "@here"
+    else:
+        content = ""
+
+    embed = {
+        "title": title,
+        "description": message,
+        "color": color,
+        "url": live_url,
+        "footer": {
+            "text": "EVERLIGHT VIRTUAL • TEST NOTIFICATION"
+        }
+    }
+
+    if banner:
+        embed["image"] = {
+            "url": banner
+        }
+
+    payload = {
+        "content": content,
+        "embeds": [embed],
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {
+                        "type": 2,
+                        "style": 5,
+                        "label": button_text,
+                        "url": live_url
+                    }
+                ]
+            }
+        ],
+        "allowed_mentions": {
+            "parse": ["everyone"] if content else []
+        }
+    }
+
+    response = requests.post(
+        webhook_url,
+        json=payload,
+        timeout=10
+    )
+
+    if response.status_code not in (200, 204):
+        return f"Gagal mengirim test notification: {response.text}", 500
+
+    return redirect(url_for("tiktok", tested="1"))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
