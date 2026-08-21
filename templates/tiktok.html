@@ -362,7 +362,36 @@
 
 <div class="panel">
     <h2>📣 Discord Live Notification</h2>
+   
+    <label>Kurocat Profile Image URL</label>\
 
+<input type="text" name="image_kurocat"
+       value="{{ settings.get('image_kurocat', '') }}"
+       placeholder="https://...">
+
+<label>Nash Profile Image URL</label>
+
+<input type="text" name="image_nash"
+       value="{{ settings.get('image_nash', '') }}"
+       placeholder="https://...">
+
+<label>Haru Profile Image URL</label>
+
+<input type="text" name="image_haru"
+       value="{{ settings.get('image_haru', '') }}"
+       placeholder="https://...">
+
+<label>Louise Profile Image URL</label>
+
+<input type="text" name="image_louise"
+       value="{{ settings.get('image_louise', '') }}"
+       placeholder="https://...">
+
+<label>Everlight Profile Image URL</label>
+
+<input type="text" name="image_everlight"
+       value="{{ settings.get('image_everlight', '') }}"
+       placeholder="https://...">
     <label>Notification Title</label>
     <input
         type="text"

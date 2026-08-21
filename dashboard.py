@@ -134,6 +134,12 @@ def tiktok():
 
         settings["tiktok_message"] = request.form["tiktok_message"]
 
+        settings["image_kurocat"] = request.form.get("image_kurocat", "")
+        settings["image_nash"] = request.form.get("image_nash", "")
+        settings["image_haru"] = request.form.get("image_haru", "")
+        settings["image_louise"] = request.form.get("image_louise", "")
+        settings["image_everlight"] = request.form.get("image_everlight", "")
+
         settings["notif_title"] = request.form["notif_title"]
         settings["notif_message"] = request.form["notif_message"]
         settings["notif_mention"] = request.form["notif_mention"]
@@ -171,6 +177,7 @@ def test_tiktok_notification():
     ).replace("{creator}", creator).replace("{url}", live_url)
 
     banner = request.form.get("notif_banner", "").strip()
+    profile_image = request.form.get("image_kurocat", "").strip()
     button_text = request.form.get("notif_button", "🔴 Watch Live")
     color_hex = request.form.get("notif_color", "#ff3355").lstrip("#")
 
@@ -198,7 +205,11 @@ def test_tiktok_notification():
         }
     }
 
-    if banner:
+    if profile_image:
+        embed["image"] = {
+            "url": profile_image
+        }
+    elif banner:
         embed["image"] = {
             "url": banner
         }

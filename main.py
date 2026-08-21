@@ -22,6 +22,31 @@ TIKTOK_LIVE_ACCOUNTS = [
     "louiegospellvt",
     "everlightvirtual",
 ]
+
+TIKTOK_CREATORS = {
+    "kurocatkurimu": {
+        "name": "Kurocat Kurimu",
+        "image": ""
+    },
+    "nashgouren_": {
+        "name": "Nash Gouren",
+        "image": ""
+    },
+    "hiharuhere": {
+        "name": "Ikkito Haru",
+        "image": ""
+    },
+    "louiegospellvt": {
+        "name": "Louise Gospell",
+        "image": ""
+    },
+    "everlightvirtual": {
+        "name": "Everlight Virtual",
+        "image": ""
+    }
+}
+
+
 # ==========================================
 # EVERLIGHT MODERATION DATABASE
 # ==========================================
@@ -41,21 +66,35 @@ CREATE TABLE IF NOT EXISTS warnings (
 """)
 
 db.commit()
+
+
+# ==========================================
+# DISCORD BOT
+# ==========================================
+
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
+
 
 class EverlightBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
 
-async def setup_hook(self):
+    async def setup_hook(self):
         await self.tree.sync()
         await start_web_server()
+
+
 bot = EverlightBot()
+
+
+# ==========================================
+# WELCOME IMAGE
+# ==========================================
+
 async def create_welcome_image(member):
-    # Buka template
     template_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "welcome.png"
@@ -63,7 +102,6 @@ async def create_welcome_image(member):
 
     image = Image.open(template_path).convert("RGBA")
 
-    # Ambil avatar Discord
     avatar_bytes = await member.display_avatar.replace(
         size=256,
         format="png"
@@ -71,11 +109,9 @@ async def create_welcome_image(member):
 
     avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # Ukuran avatar
     avatar_size = 300
     avatar = avatar.resize((avatar_size, avatar_size))
 
-    # Bikin avatar bulat
     mask = Image.new("L", (avatar_size, avatar_size), 0)
     mask_draw = ImageDraw.Draw(mask)
     mask_draw.ellipse(
@@ -83,7 +119,6 @@ async def create_welcome_image(member):
         fill=255
     )
 
-    # Posisi avatar di tengah
     avatar_x = (image.width - avatar_size) // 2
     avatar_y = 35
 
@@ -93,13 +128,12 @@ async def create_welcome_image(member):
         mask
     )
 
-    # Tulis nama Discord
     draw = ImageDraw.Draw(image)
     nama = member.display_name
 
     try:
         font_nama = ImageFont.truetype("arialbd.ttf", 100)
-    except:
+    except Exception:
         font_nama = ImageFont.load_default()
 
     bbox = draw.textbbox(
@@ -122,7 +156,6 @@ async def create_welcome_image(member):
         stroke_fill="#4a3c3c"
     )
 
-    # Simpan hasil ke memory
     output = io.BytesIO()
     image.save(output, format="PNG")
     output.seek(0)
@@ -132,7 +165,13 @@ async def create_welcome_image(member):
         filename="welcome.png"
     )
 
+
+# ==========================================
+# TIKTOK LIVE CHECKER
+# ==========================================
+
 live_status = {}
+
 
 @tasks.loop(seconds=60)
 async def live_checker():
@@ -145,46 +184,82 @@ async def live_checker():
     for username in TIKTOK_LIVE_ACCOUNTS:
         try:
             client = TikTokLiveClient(unique_id=f"@{username}")
-
             is_live = await client.is_live()
-
             sebelumnya_live = live_status.get(username, False)
 
             print(f"TikTok @{username} | LIVE: {is_live}")
 
             if is_live and not sebelumnya_live:
+                creator_info = TIKTOK_CREATORS.get(
+                    username,
+                    {"name": username, "image": ""}
+                )
+                creator_name = creator_info.get("name", username)
+                creator_image = creator_info.get("image", "")
+                live_url = f"https://www.tiktok.com/@{username}/live"
+
+                embed = discord.Embed(
+                    title=f"🔴 {creator_name} IS LIVE!",
+                    description=(
+                        f"✨ {creator_name} sedang LIVE di TikTok!\n"
+                        f"Ayo mampir dan ramaikan live-nya!"
+                    ),
+                    url=live_url,
+                    color=discord.Color.red()
+                )
+
+                embed.set_footer(text="EVERLIGHT VIRTUAL")
+
+                if creator_image:
+                    embed.set_image(url=creator_image)
+
+                view = discord.ui.View()
+
+                watch_button = discord.ui.Button(
+                    label="Watch Stream",
+                    style=discord.ButtonStyle.link,
+                    url=live_url,
+                    emoji="🔴"
+                )
+
+                view.add_item(watch_button)
+
                 await channel.send(
-                    f"🔴 **@{username} sedang LIVE di TikTok!**\n"
-                    f"https://www.tiktok.com/@{username}/live"
+                    embed=embed,
+                    view=view
                 )
 
             live_status[username] = is_live
 
         except Exception as e:
             print(f"❌ Gagal cek @{username}: {e}")
+
+
+# ==========================================
+# BOT READY + HELLO
+# ==========================================
+
 @bot.event
 async def on_ready():
-    print(f"==============================")
-    print(f"Everlight Bot ONLINE!")
+    print("==============================")
+    print("Everlight Bot ONLINE!")
     print(f"Login sebagai: {bot.user}")
-    print(f"==============================")
+    print("==============================")
 
     if not live_checker.is_running():
         live_checker.start()
-        
+
+
 @bot.tree.command(name="hello", description="Say hello to Everlight!")
 async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"✨ Hello {interaction.user.mention}! Welcome to Everlight!"
     )
-    # =====================================================
+
+
+# =====================================================
 # EVERLIGHT MODERATION SYSTEM
 # =====================================================
-
-
-# -------------------------
-# WARN
-# -------------------------
 
 @bot.tree.command(
     name="warn",
@@ -218,7 +293,6 @@ async def warn(
     )
 
     db.commit()
-
     warning_id = cursor.lastrowid
 
     try:
@@ -231,9 +305,7 @@ async def warn(
             f"Harap mengikuti peraturan server untuk menghindari "
             f"tindakan moderasi selanjutnya."
         )
-
         dm_status = "📨 Warning telah dikirim melalui DM."
-
     except discord.Forbidden:
         dm_status = "⚠️ DM member tidak dapat dikirim."
 
@@ -246,10 +318,6 @@ async def warn(
         f"{dm_status}"
     )
 
-
-# -------------------------
-# CHECK WARNINGS
-# -------------------------
 
 @bot.tree.command(
     name="warnings",
@@ -282,9 +350,7 @@ async def warnings(
         )
         return
 
-    text = (
-        f"⚠️ **WARNING HISTORY — {member.display_name}**\n\n"
-    )
+    text = f"⚠️ **WARNING HISTORY — {member.display_name}**\n\n"
 
     for warning_id, moderator_id, reason, created_at in results:
         text += (
@@ -298,10 +364,6 @@ async def warnings(
         ephemeral=True
     )
 
-
-# -------------------------
-# REMOVE ONE WARNING
-# -------------------------
 
 @bot.tree.command(
     name="unwarn",
@@ -343,10 +405,6 @@ async def unwarn(
     )
 
 
-# -------------------------
-# CLEAR ALL WARNINGS
-# -------------------------
-
 @bot.tree.command(
     name="clearwarnings",
     description="Hapus semua warning seorang member"
@@ -368,7 +426,6 @@ async def clearwarnings(
     )
 
     deleted = cursor.rowcount
-
     db.commit()
 
     await interaction.response.send_message(
@@ -376,10 +433,6 @@ async def clearwarnings(
         f"Total warning dihapus: **{deleted}**"
     )
 
-
-# -------------------------
-# KICK
-# -------------------------
 
 @bot.tree.command(
     name="kick",
@@ -405,7 +458,6 @@ async def kick(
             f"Reason: **{reason}**\n"
             f"Moderator: **{interaction.user}**"
         )
-
     except discord.Forbidden:
         pass
 
@@ -418,17 +470,12 @@ async def kick(
             f"📝 Reason: **{reason}**\n"
             f"🛡️ Moderator: {interaction.user.mention}"
         )
-
     except discord.Forbidden:
         await interaction.response.send_message(
             "❌ Bot tidak memiliki permission untuk kick member ini.",
             ephemeral=True
         )
 
-
-# -------------------------
-# BAN
-# -------------------------
 
 @bot.tree.command(
     name="ban",
@@ -455,7 +502,6 @@ async def ban(
             f"Reason: **{reason}**\n"
             f"Moderator: **{interaction.user}**"
         )
-
     except discord.Forbidden:
         pass
 
@@ -468,12 +514,17 @@ async def ban(
             f"📝 Reason: **{reason}**\n"
             f"🛡️ Moderator: {interaction.user.mention}"
         )
-
     except discord.Forbidden:
         await interaction.response.send_message(
             "❌ Bot tidak memiliki permission untuk ban member ini.",
             ephemeral=True
         )
+
+
+# ==========================================
+# MEMBER JOIN / AUTO ROLE
+# ==========================================
+
 @bot.event
 async def on_member_join(member):
     channel = discord.utils.get(
@@ -486,7 +537,6 @@ async def on_member_join(member):
         name="moonwalker"
     )
 
-    # Auto role
     if role:
         try:
             await member.add_roles(
@@ -496,7 +546,6 @@ async def on_member_join(member):
         except discord.Forbidden:
             print("Gagal memberikan role moonwalker.")
 
-    # Welcome
     if channel:
         message = (
             f"✨ **A New Star Has Appeared** ✨\n"
@@ -521,15 +570,12 @@ async def on_member_join(member):
 
 
 # ==================================================
-# 💎 EVERLIGHT SERVER BOOSTER NOTIFICATION
+# SERVER BOOSTER NOTIFICATION
 # ==================================================
 
 @bot.event
 async def on_member_update(before, after):
-
-    # Member baru saja mulai boost server
     if before.premium_since is None and after.premium_since is not None:
-
         channel = discord.utils.get(
             after.guild.text_channels,
             name="booster"
@@ -550,9 +596,7 @@ async def on_member_update(before, after):
             color=discord.Color.from_rgb(255, 105, 180)
         )
 
-        embed.set_thumbnail(
-            url=after.display_avatar.url
-        )
+        embed.set_thumbnail(url=after.display_avatar.url)
 
         embed.set_footer(
             text="Everlight Virtual • Keep Your Light Alive ✨"
@@ -565,9 +609,6 @@ async def on_member_update(before, after):
 
         print(f"BOOST DETECTED: {after}")
 
-# ==================================================
-# 💎 TEST BOOSTER COMMAND
-# ==================================================
 
 @bot.tree.command(
     name="testbooster",
@@ -575,7 +616,6 @@ async def on_member_update(before, after):
 )
 @app_commands.checks.has_permissions(administrator=True)
 async def testbooster(interaction: discord.Interaction):
-
     channel = discord.utils.get(
         interaction.guild.text_channels,
         name="booster"
@@ -616,9 +656,11 @@ async def testbooster(interaction: discord.Interaction):
         "✅ Booster notification berhasil dites!",
         ephemeral=True
     )
-# =========================
-# TIKTOK WEBHOOK
-# =========================
+
+
+# ==========================================
+# TIKTOK WEB / OAUTH ROUTES
+# ==========================================
 
 async def tiktok_webhook(request):
     try:
@@ -628,6 +670,8 @@ async def tiktok_webhook(request):
     except Exception as e:
         print("TikTok Webhook Error:", e)
         return web.Response(text="OK", status=200)
+
+
 async def terms_page(request):
     html = """
     <html>
@@ -686,14 +730,14 @@ async def privacy_page(request):
     </body>
     </html>
     """
-    return web.Response(text=html, content_type="text/html")  
+    return web.Response(text=html, content_type="text/html")
+
+
 async def tiktok_verify_file(request):
     verification = "tiktok-developers-site-verification=7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL"
     return web.Response(
         body=verification.encode("utf-8"),
-        headers={
-            "Content-Type": "text/plain; charset=utf-8"
-        }
+        headers={"Content-Type": "text/plain; charset=utf-8"}
     )
 
 
@@ -702,154 +746,146 @@ async def tiktok_verify_terms(request):
         text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l",
         content_type="text/plain"
     )
+
+
 async def tiktok_verify_privacy(request):
     return web.Response(
         text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
         content_type="text/plain"
     )
-    async def test_route(request):
-        return web.Response(text="EVERLIGHT TEST OK")
 
-    async def verify_root_txt(request):
+
+async def test_route(request):
+    return web.Response(text="EVERLIGHT TEST OK")
+
+
+async def verify_root_txt(request):
+    return web.Response(
+        text="tiktok-developers-site-verification=lw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P",
+        content_type="text/plain"
+    )
+
+
+async def verify_terms_txt(request):
+    return web.Response(
+        text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
+        content_type="text/plain"
+    )
+
+
+async def verify_privacy_txt(request):
+    return web.Response(
+        text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
+        content_type="text/plain"
+    )
+
+
+async def tiktok_login(request):
+    client_key = os.getenv("TIKTOK_CLIENT_KEY")
+    redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
+
+    params = {
+        "client_key": client_key,
+        "scope": "user.info.basic,video.list",
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": "everlight"
+    }
+
+    login_url = (
+        "https://www.tiktok.com/v2/auth/authorize/?"
+        + urllib.parse.urlencode(params)
+    )
+
+    raise web.HTTPFound(login_url)
+
+
+async def tiktok_callback(request):
+    code = request.query.get("code")
+    error = request.query.get("error")
+
+    if error:
+        return web.Response(text=f"TikTok Login Error: {error}")
+
+    if not code:
+        return web.Response(text="Authorization code tidak ditemukan.")
+
+    client_key = os.getenv("TIKTOK_CLIENT_KEY")
+    client_secret = os.getenv("TIKTOK_CLIENT_SECRET")
+    redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
+    token_url = "https://open.tiktokapis.com/v2/oauth/token/"
+
+    data = {
+        "client_key": client_key,
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": redirect_uri
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(token_url, data=data) as response:
+            result = await response.json()
+
+    if "access_token" not in result:
         return web.Response(
-            text="tiktok-developers-site-verification=lw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P",
-            content_type="text/plain"
-        )
-        
-    async def verify_terms_txt(request):
-        return web.Response(
-            text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
-            content_type="text/plain"
+            text=f"Gagal mendapatkan TikTok access token: {result}"
         )
 
-    async def verify_privacy_txt(request):
-        return web.Response(
-            text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
-            content_type="text/plain"
-        )
+    access_token = result["access_token"]
+    refresh_token = result.get("refresh_token")
+    open_id = result.get("open_id")
 
-    async def tiktok_login(request):
-        client_key = os.getenv("TIKTOK_CLIENT_KEY")
+    token_data = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "open_id": open_id
+    }
 
-        redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
-
-        params = {
-            "client_key": client_key,
-            "scope": "user.info.basic,video.list",
-            "response_type": "code",
-            "redirect_uri": redirect_uri,
-            "state": "everlight"
-        }
-
-        login_url = "https://www.tiktok.com/v2/auth/authorize/?" + urllib.parse.urlencode(params)
-
-        raise web.HTTPFound(login_url)
-
-    async def tiktok_callback(request):
-        code = request.query.get("code")
-        error = request.query.get("error")
-
-        if error:
-            return web.Response(text=f"TikTok Login Error: {error}")
-
-        if not code:
-            return web.Response(text="Authorization code tidak ditemukan.")
-
-        client_key = os.getenv("TIKTOK_CLIENT_KEY")
-        client_secret = os.getenv("TIKTOK_CLIENT_SECRET")
-
-        redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
-        token_url = "https://open.tiktokapis.com/v2/oauth/token/"
-
-        data = {
-            "client_key": client_key,
-            "client_secret": client_secret,
-            "code": code,
-            "grant_type": "authorization_code",
-            "redirect_uri": redirect_uri
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(token_url, data=data) as response:
-                result = await response.json()
-
-        if "access_token" not in result:
-            return web.Response(
-                text=f"Gagal mendapatkan TikTok access token: {result}"
-            )
-
-        access_token = result["access_token"]
-        refresh_token = result.get("refresh_token")
-        open_id = result.get("open_id")
-
-        token_data = {
-    "access_token": access_token,
-    "refresh_token": refresh_token,
-    "open_id": open_id
-}
-
-    with open("tiktok_token.json", "w") as f:
+    with open("tiktok_token.json", "w", encoding="utf-8") as f:
         json.dump(token_data, f)
-        
+
     print("TikTok authorization berhasil!")
     print(f"TikTok Open ID: {open_id}")
 
     return web.Response(
-            text="TikTok berhasil terhubung ke Everlight Bot!"
-        )
-        
-    async def home_page(request):
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Everlight World</title>
-        </head>
-        <body>
-            <h1>Everlight World</h1>
-            <p>Connect your TikTok account with Everlight Bot.</p>
-            <a href="/tiktok/login">
-                <button>Login with TikTok</button>
-            </a>
-        </body>
-        </html>
-        """
-        return web.Response(text=html, content_type="text/html")
+        text="TikTok berhasil terhubung ke Everlight Bot!"
+    )
+
+
+async def home_page(request):
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Everlight World</title>
+    </head>
+    <body>
+        <h1>Everlight World</h1>
+        <p>Connect your TikTok account with Everlight Bot.</p>
+        <a href="/tiktok/login">
+            <button>Login with TikTok</button>
+        </a>
+    </body>
+    </html>
+    """
+    return web.Response(text=html, content_type="text/html")
+
 
 async def start_web_server():
     app = web.Application()
-
-    async def test_route(request):
-        return web.Response(text="EVERLIGHT TEST OK")
-    async def home_page(request):
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Everlight World</title>
-        </head>
-        <body>
-            <h1>Everlight World</h1>
-            <p>Connect your TikTok account with Everlight Bot.</p>
-            <a href="/tiktok/login">
-                <button>Login with TikTok</button>
-            </a>
-        </body>
-        </html>
-        """
-        return web.Response(text=html, content_type="text/html")
 
     app.router.add_get("/test", test_route)
     app.router.add_get("/", home_page)
     app.router.add_get("/tiktok/login", tiktok_login)
     app.router.add_get("/cek-tiktok", verify_root_txt)
-    
+
     app.router.add_get(
         "/{filename}.txt",
         verify_root_txt
     )
-    
-    app.router.add_get("/tiktok/callback", tiktok_callback)  
+
+    app.router.add_get("/tiktok/callback", tiktok_callback)
 
     app.router.add_get(
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
@@ -864,12 +900,12 @@ async def start_web_server():
     app.router.add_post("/tiktok/webhook", tiktok_webhook)
     app.router.add_get("/terms", terms_page)
     app.router.add_get("/privacy", privacy_page)
-    
+
     app.router.add_get(
         "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
         tiktok_verify_file
     )
-    
+
     runner = web.AppRunner(app)
     await runner.setup()
 
@@ -878,8 +914,13 @@ async def start_web_server():
     await site.start()
 
     print(f"TikTok Webhook server berjalan di port {port}")
-    
+
+
+# ==========================================
+# START BOT
+# ==========================================
+
 if not TOKEN:
-    raise RuntimeError("DISCORD_TOKEN belum diisi di file .env")
+    raise RuntimeError("DISCORD_TOKEN belum diisi di environment")
 
 bot.run(TOKEN)
