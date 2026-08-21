@@ -30,6 +30,13 @@ def load_settings():
 "enable_everlight": True,
 "tiktok_message": "🔴 {creator} sedang LIVE di TikTok!",
 
+"notif_title": "🔴 {creator} IS LIVE!",
+"notif_message": "✨ {creator} sedang LIVE di TikTok! Ayo mampir dan ramaikan live-nya!",
+"notif_mention": "none",
+"notif_banner": "",
+"notif_color": "#ff3355",
+"notif_button": "🔴 Watch Live",
+
     "message": """✨ **A New Star Has Appeared** ✨
 Selamat datang, {member} ✨ Kamu telah memasuki **Everlight Virtual**, tempat di mana kreativitas, persahabatan, dan mimpi bersinar bersama.
 
@@ -125,6 +132,13 @@ def tiktok():
         settings["enable_everlight"] = "enable_everlight" in request.form
 
         settings["tiktok_message"] = request.form["tiktok_message"]
+
+        settings["notif_title"] = request.form["notif_title"]
+        settings["notif_message"] = request.form["notif_message"]
+        settings["notif_mention"] = request.form["notif_mention"]
+        settings["notif_banner"] = request.form["notif_banner"]
+        settings["notif_color"] = request.form["notif_color"]
+        settings["notif_button"] = request.form["notif_button"]
 
         save_settings(settings)
 

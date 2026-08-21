@@ -360,6 +360,54 @@
         </div>
 
 
+<div class="panel">
+    <h2>📣 Discord Live Notification</h2>
+
+    <label>Notification Title</label>
+    <input
+        type="text"
+        name="notif_title"
+        value="{{ settings.get('notif_title', '🔴 {creator} IS LIVE!') }}"
+    >
+
+    <label>Notification Message</label>
+    <textarea name="notif_message">{{ settings.get('notif_message', '✨ {creator} sedang LIVE di TikTok!\nAyo mampir dan ramaikan live-nya!') }}</textarea>
+
+    <label>Mention</label>
+    <select name="notif_mention">
+        <option value="none">No Mention</option>
+        <option value="everyone">@everyone</option>
+        <option value="here">@here</option>
+    </select>
+
+    <label>Banner Image URL</label>
+    <input
+        type="text"
+        name="notif_banner"
+        placeholder="https://..."
+        value="{{ settings.get('notif_banner', '') }}"
+    >
+
+    <label>Embed Color</label>
+    <input
+        type="color"
+        name="notif_color"
+        value="{{ settings.get('notif_color', '#ff3355') }}"
+    >
+
+    <label>Button Text</label>
+    <input
+        type="text"
+        name="notif_button"
+        value="{{ settings.get('notif_button', '🔴 Watch Live') }}"
+    >
+
+    <p style="opacity:.7; margin-top:12px;">
+        Placeholder: {creator} = nama VTuber &nbsp; • &nbsp;
+        {url} = link TikTok Live
+    </p>
+</div>
+
         <button class="save" type="submit">
             💾 Save TikTok Settings
         </button>
