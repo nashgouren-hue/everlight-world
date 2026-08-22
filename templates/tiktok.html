@@ -71,6 +71,11 @@
             font-size: 36px;
         }
 
+        h3 {
+            margin-top: 28px;
+            margin-bottom: 15px;
+        }
+
         .description {
             color: #aaa9c9;
             margin-top: 8px;
@@ -96,7 +101,9 @@
             font-weight: bold;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        textarea,
+        select {
             width: 100%;
             padding: 14px;
             border-radius: 9px;
@@ -104,6 +111,20 @@
             background: #0e0e19;
             color: white;
             font-size: 15px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 48px;
+            border-radius: 9px;
+            border: 1px solid #39384c;
+            background: #0e0e19;
+            padding: 5px;
         }
 
         .account {
@@ -124,11 +145,37 @@
             border-radius: 9px;
             padding: 13px;
             text-align: center;
+            white-space: nowrap;
         }
 
         .toggle-box input {
             transform: scale(1.3);
             margin-right: 7px;
+        }
+
+        .post-account {
+            background: #10101b;
+            border: 1px solid #302f43;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 14px;
+        }
+
+        .post-name {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .post-channel-label {
+            margin-top: 0;
         }
 
         .hint {
@@ -138,7 +185,8 @@
         }
 
         .save {
-            margin-top: 25px;
+            margin-top: 10px;
+            margin-right: 8px;
             border: none;
             border-radius: 9px;
             padding: 14px 24px;
@@ -161,6 +209,27 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+
+        @media (max-width: 800px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .content {
+                margin-left: 200px;
+                width: calc(100% - 200px);
+                padding: 25px;
+            }
+
+            .account {
+                grid-template-columns: 1fr;
+            }
+
+            .post-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
@@ -172,16 +241,11 @@
     <div class="subtitle">Bot Control Center</div>
 
     <a class="menu" href="/">🏠 Overview</a>
-
     <a class="menu" href="/welcome">👋 Welcome</a>
-
     <a class="menu" href="/autorole">🌙 Auto Role</a>
-
     <a class="menu active" href="/tiktok">🎵 TikTok</a>
-
-    <a class="menu" href="#">🛡️ Moderation</a>
-
-    <a class="menu" href="#">⚙️ Settings</a>
+    <a class="menu" href="/moderation">🛡️ Moderation</a>
+    <a class="menu" href="/settings">⚙️ Settings</a>
 
 </div>
 
@@ -191,8 +255,10 @@
     <h1>🎵 TikTok Settings</h1>
 
     <div class="description">
-        Atur akun TikTok Everlight dan notifikasi Live ke Discord.
+        Atur akun TikTok Everlight, Live Notification,
+        dan Post Notification ke Discord.
     </div>
+
 
     {% if request.args.get("saved") %}
     <div class="success">
@@ -201,18 +267,37 @@
     {% endif %}
 
 
+    {% if request.args.get("tested") %}
+    <div class="success">
+        🧪 Test Live Notification berhasil dikirim!
+    </div>
+    {% endif %}
+
+
+    {% if request.args.get("tested_post") %}
+    <div class="success">
+        🎬 Test Post Notification berhasil dikirim!
+    </div>
+    {% endif %}
+
+
     <form method="POST">
+
+
+        <!-- ====================================== -->
+        <!-- LIVE CHANNEL -->
+        <!-- ====================================== -->
 
         <div class="panel">
 
-            <h2>📢 Live Notification</h2>
+            <h2>🔴 Live Notification</h2>
 
-            <label>Discord Notification Channel</label>
+            <label>Discord Live Notification Channel</label>
 
             <input
                 type="text"
                 name="tiktok_channel"
-                value="{{ settings.tiktok_channel }}"
+                value="{{ settings.get('tiktok_channel', 'livenotification') }}"
                 placeholder="livenotification"
             >
 
@@ -224,18 +309,24 @@
         </div>
 
 
+        <!-- ====================================== -->
+        <!-- TIKTOK ACCOUNTS -->
+        <!-- ====================================== -->
+
         <div class="panel">
 
             <h2>⭐ TikTok Accounts</h2>
 
+
             <div class="account">
+
                 <div>
                     <label>Kurocat Kurimu</label>
+
                     <input
                         type="text"
                         name="tiktok_kurocat"
-                        value="{{ settings.tiktok_kurocat }}"
-                        placeholder="@kurocatkurimu"
+                        value="{{ settings.get('tiktok_kurocat', '@kurocatkurimu') }}"
                     >
                 </div>
 
@@ -243,21 +334,23 @@
                     <input
                         type="checkbox"
                         name="enable_kurocat"
-                        {% if settings.enable_kurocat %}checked{% endif %}
+                        {% if settings.get('enable_kurocat', True) %}checked{% endif %}
                     >
-                    ON
+                    LIVE ON
                 </div>
+
             </div>
 
 
             <div class="account">
+
                 <div>
                     <label>Nash Gouren</label>
+
                     <input
                         type="text"
                         name="tiktok_nash"
-                        value="{{ settings.tiktok_nash }}"
-                        placeholder="@nashgouren_"
+                        value="{{ settings.get('tiktok_nash', '@nashgouren_') }}"
                     >
                 </div>
 
@@ -265,21 +358,23 @@
                     <input
                         type="checkbox"
                         name="enable_nash"
-                        {% if settings.enable_nash %}checked{% endif %}
+                        {% if settings.get('enable_nash', True) %}checked{% endif %}
                     >
-                    ON
+                    LIVE ON
                 </div>
+
             </div>
 
 
             <div class="account">
+
                 <div>
                     <label>Ikkito Haru</label>
+
                     <input
                         type="text"
                         name="tiktok_haru"
-                        value="{{ settings.tiktok_haru }}"
-                        placeholder="@hiharuhere"
+                        value="{{ settings.get('tiktok_haru', '@hiharuhere') }}"
                     >
                 </div>
 
@@ -287,21 +382,23 @@
                     <input
                         type="checkbox"
                         name="enable_haru"
-                        {% if settings.enable_haru %}checked{% endif %}
+                        {% if settings.get('enable_haru', True) %}checked{% endif %}
                     >
-                    ON
+                    LIVE ON
                 </div>
+
             </div>
 
 
             <div class="account">
+
                 <div>
                     <label>Louise Gospell</label>
+
                     <input
                         type="text"
                         name="tiktok_louise"
-                        value="{{ settings.tiktok_louise }}"
-                        placeholder="@louiegospellvt"
+                        value="{{ settings.get('tiktok_louise', '@louiegospellvt') }}"
                     >
                 </div>
 
@@ -309,21 +406,23 @@
                     <input
                         type="checkbox"
                         name="enable_louise"
-                        {% if settings.enable_louise %}checked{% endif %}
+                        {% if settings.get('enable_louise', True) %}checked{% endif %}
                     >
-                    ON
+                    LIVE ON
                 </div>
+
             </div>
 
 
             <div class="account">
+
                 <div>
                     <label>Everlight Virtual</label>
+
                     <input
                         type="text"
                         name="tiktok_everlight"
-                        value="{{ settings.tiktok_everlight }}"
-                        placeholder="@everlightvirtual"
+                        value="{{ settings.get('tiktok_everlight', '@everlightvirtual') }}"
                     >
                 </div>
 
@@ -331,127 +430,449 @@
                     <input
                         type="checkbox"
                         name="enable_everlight"
-                        {% if settings.enable_everlight %}checked{% endif %}
+                        {% if settings.get('enable_everlight', True) %}checked{% endif %}
                     >
-                    ON
+                    LIVE ON
                 </div>
+
             </div>
 
         </div>
 
+
+        <!-- ====================================== -->
+        <!-- LIVE APPEARANCE -->
+        <!-- ====================================== -->
 
         <div class="panel">
 
-            <h2>💬 Live Message</h2>
+            <h2>📣 Discord Live Notification</h2>
 
-            <label>Notification Message</label>
+
+            <label>Kurocat Profile Image URL</label>
 
             <input
                 type="text"
-                name="tiktok_message"
-                value="{{ settings.tiktok_message }}"
-                placeholder="🔴 {creator} sedang LIVE di TikTok!"
+                name="image_kurocat"
+                value="{{ settings.get('image_kurocat', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Nash Profile Image URL</label>
+
+            <input
+                type="text"
+                name="image_nash"
+                value="{{ settings.get('image_nash', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Haru Profile Image URL</label>
+
+            <input
+                type="text"
+                name="image_haru"
+                value="{{ settings.get('image_haru', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Louise Profile Image URL</label>
+
+            <input
+                type="text"
+                name="image_louise"
+                value="{{ settings.get('image_louise', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Everlight Profile Image URL</label>
+
+            <input
+                type="text"
+                name="image_everlight"
+                value="{{ settings.get('image_everlight', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Notification Title</label>
+
+            <input
+                type="text"
+                name="notif_title"
+                value="{{ settings.get('notif_title', '🔴 {creator} IS LIVE!') }}"
+            >
+
+
+            <label>Notification Message</label>
+
+            <textarea name="notif_message">{{ settings.get('notif_message', '✨ {creator} sedang LIVE di TikTok! Ayo mampir dan ramaikan live-nya!') }}</textarea>
+
+
+            <label>Mention</label>
+
+            <select name="notif_mention">
+
+                <option
+                    value="none"
+                    {% if settings.get('notif_mention', 'none') == 'none' %}selected{% endif %}
+                >
+                    No Mention
+                </option>
+
+                <option
+                    value="everyone"
+                    {% if settings.get('notif_mention') == 'everyone' %}selected{% endif %}
+                >
+                    @everyone
+                </option>
+
+                <option
+                    value="here"
+                    {% if settings.get('notif_mention') == 'here' %}selected{% endif %}
+                >
+                    @here
+                </option>
+
+            </select>
+
+
+            <label>Banner Image URL</label>
+
+            <input
+                type="text"
+                name="notif_banner"
+                value="{{ settings.get('notif_banner', '') }}"
+                placeholder="https://..."
+            >
+
+
+            <label>Embed Color</label>
+
+            <input
+                type="color"
+                name="notif_color"
+                value="{{ settings.get('notif_color', '#ff3355') }}"
+            >
+
+
+            <label>Button Text</label>
+
+            <input
+                type="text"
+                name="notif_button"
+                value="{{ settings.get('notif_button', '🔴 Watch Stream') }}"
             >
 
             <div class="hint">
-                Gunakan {creator} untuk nama VTuber.
+                {creator} = nama VTuber •
+                {url} = link TikTok Live
             </div>
 
         </div>
 
 
-<div class="panel">
-    <h2>📣 Discord Live Notification</h2>
-   
-    <label>Kurocat Profile Image URL</label>\
+        <!-- ====================================== -->
+        <!-- POST NOTIFICATION -->
+        <!-- ====================================== -->
 
-<input type="text" name="image_kurocat"
-       value="{{ settings.get('image_kurocat', '') }}"
-       placeholder="https://...">
+        <div class="panel">
 
-<label>Nash Profile Image URL</label>
+            <h2>🎬 TikTok Post Notification</h2>
 
-<input type="text" name="image_nash"
-       value="{{ settings.get('image_nash', '') }}"
-       placeholder="https://...">
+            <div class="description">
+                Setiap akun dapat mengirim postingan baru
+                ke channel Discord yang berbeda.
+            </div>
 
-<label>Haru Profile Image URL</label>
 
-<input type="text" name="image_haru"
-       value="{{ settings.get('image_haru', '') }}"
-       placeholder="https://...">
+            <!-- KUROCAT -->
 
-<label>Louise Profile Image URL</label>
+            <div class="post-account">
 
-<input type="text" name="image_louise"
-       value="{{ settings.get('image_louise', '') }}"
-       placeholder="https://...">
+                <div class="post-header">
 
-<label>Everlight Profile Image URL</label>
+                    <div class="post-name">
+                        🌙 Kurocat Kurimu
+                    </div>
 
-<input type="text" name="image_everlight"
-       value="{{ settings.get('image_everlight', '') }}"
-       placeholder="https://...">
-    <label>Notification Title</label>
-    <input
-        type="text"
-        name="notif_title"
-        value="{{ settings.get('notif_title', '🔴 {creator} IS LIVE!') }}"
-    >
+                    <div class="toggle-box">
+                        <input
+                            type="checkbox"
+                            name="enable_post_kurocat"
+                            {% if settings.get('enable_post_kurocat', True) %}checked{% endif %}
+                        >
+                        POST ON
+                    </div>
 
-    <label>Notification Message</label>
-    <textarea name="notif_message">{{ settings.get('notif_message', '✨ {creator} sedang LIVE di TikTok!\nAyo mampir dan ramaikan live-nya!') }}</textarea>
+                </div>
 
-    <label>Mention</label>
-    <select name="notif_mention">
-        <option value="none">No Mention</option>
-        <option value="everyone">@everyone</option>
-        <option value="here">@here</option>
-    </select>
+                <label class="post-channel-label">
+                    Discord Channel
+                </label>
 
-    <label>Banner Image URL</label>
-    <input
-        type="text"
-        name="notif_banner"
-        placeholder="https://..."
-        value="{{ settings.get('notif_banner', '') }}"
-    >
+                <input
+                    type="text"
+                    name="post_channel_kurocat"
+                    value="{{ settings.get('post_channel_kurocat', 'user-news') }}"
+                    placeholder="user-news"
+                >
 
-    <label>Embed Color</label>
-    <input
-        type="color"
-        name="notif_color"
-        value="{{ settings.get('notif_color', '#ff3355') }}"
-    >
+            </div>
 
-    <label>Button Text</label>
-    <input
-        type="text"
-        name="notif_button"
-        value="{{ settings.get('notif_button', '🔴 Watch Live') }}"
-    >
 
-    <p style="opacity:.7; margin-top:12px;">
-        Placeholder: {creator} = nama VTuber &nbsp; • &nbsp;
-        {url} = link TikTok Live
-    </p>
-</div>
+            <!-- NASH -->
 
-        <button class="save" type="submit">
+            <div class="post-account">
+
+                <div class="post-header">
+
+                    <div class="post-name">
+                        🐺 Nash Gouren
+                    </div>
+
+                    <div class="toggle-box">
+                        <input
+                            type="checkbox"
+                            name="enable_post_nash"
+                            {% if settings.get('enable_post_nash', True) %}checked{% endif %}
+                        >
+                        POST ON
+                    </div>
+
+                </div>
+
+                <label class="post-channel-label">
+                    Discord Channel
+                </label>
+
+                <input
+                    type="text"
+                    name="post_channel_nash"
+                    value="{{ settings.get('post_channel_nash', 'user-news') }}"
+                    placeholder="user-news"
+                >
+
+            </div>
+
+
+            <!-- HARU -->
+
+            <div class="post-account">
+
+                <div class="post-header">
+
+                    <div class="post-name">
+                        🦊 Ikkito Haru
+                    </div>
+
+                    <div class="toggle-box">
+                        <input
+                            type="checkbox"
+                            name="enable_post_haru"
+                            {% if settings.get('enable_post_haru', True) %}checked{% endif %}
+                        >
+                        POST ON
+                    </div>
+
+                </div>
+
+                <label class="post-channel-label">
+                    Discord Channel
+                </label>
+
+                <input
+                    type="text"
+                    name="post_channel_haru"
+                    value="{{ settings.get('post_channel_haru', 'user-news') }}"
+                    placeholder="user-news"
+                >
+
+            </div>
+
+
+            <!-- LOUISE -->
+
+            <div class="post-account">
+
+                <div class="post-header">
+
+                    <div class="post-name">
+                        ✨ Louise Gospell
+                    </div>
+
+                    <div class="toggle-box">
+                        <input
+                            type="checkbox"
+                            name="enable_post_louise"
+                            {% if settings.get('enable_post_louise', True) %}checked{% endif %}
+                        >
+                        POST ON
+                    </div>
+
+                </div>
+
+                <label class="post-channel-label">
+                    Discord Channel
+                </label>
+
+                <input
+                    type="text"
+                    name="post_channel_louise"
+                    value="{{ settings.get('post_channel_louise', 'user-news') }}"
+                    placeholder="user-news"
+                >
+
+            </div>
+
+
+            <!-- EVERLIGHT -->
+
+            <div class="post-account">
+
+                <div class="post-header">
+
+                    <div class="post-name">
+                        🌟 Everlight Virtual
+                    </div>
+
+                    <div class="toggle-box">
+                        <input
+                            type="checkbox"
+                            name="enable_post_everlight"
+                            {% if settings.get('enable_post_everlight', True) %}checked{% endif %}
+                        >
+                        POST ON
+                    </div>
+
+                </div>
+
+                <label class="post-channel-label">
+                    Discord Channel
+                </label>
+
+                <input
+                    type="text"
+                    name="post_channel_everlight"
+                    value="{{ settings.get('post_channel_everlight', 'user-news') }}"
+                    placeholder="announcement"
+                >
+
+                <div class="hint">
+                    Contoh: announcement, everlight-news,
+                    event-news, atau channel lain.
+                </div>
+
+            </div>
+
+
+            <h3>🔔 Post Notification Appearance</h3>
+
+
+            <label>Notification Title</label>
+
+            <input
+                type="text"
+                name="post_notif_title"
+                value="{{ settings.get('post_notif_title', '🎬 {creator} NEW POST!') }}"
+            >
+
+
+            <label>Notification Message</label>
+
+            <textarea name="post_notif_message">{{ settings.get('post_notif_message', '✨ {creator} baru saja mengupload postingan baru di TikTok!') }}</textarea>
+
+
+            <label>Mention</label>
+
+            <select name="post_notif_mention">
+
+                <option
+                    value="none"
+                    {% if settings.get('post_notif_mention', 'none') == 'none' %}selected{% endif %}
+                >
+                    No Mention
+                </option>
+
+                <option
+                    value="everyone"
+                    {% if settings.get('post_notif_mention') == 'everyone' %}selected{% endif %}
+                >
+                    @everyone
+                </option>
+
+                <option
+                    value="here"
+                    {% if settings.get('post_notif_mention') == 'here' %}selected{% endif %}
+                >
+                    @here
+                </option>
+
+            </select>
+
+
+            <label>Embed Color</label>
+
+            <input
+                type="color"
+                name="post_notif_color"
+                value="{{ settings.get('post_notif_color', '#8b5cf6') }}"
+            >
+
+
+            <label>Button Text</label>
+
+            <input
+                type="text"
+                name="post_notif_button"
+                value="{{ settings.get('post_notif_button', '🎬 View Post') }}"
+            >
+
+
+            <div class="hint">
+                {creator} = nama VTuber •
+                {url} = link postingan TikTok
+            </div>
+
+        </div>
+
+
+        <!-- ====================================== -->
+        <!-- BUTTONS -->
+        <!-- ====================================== -->
+
+        <button
+            class="save"
+            type="submit"
+        >
             💾 Save TikTok Settings
         </button>
+
 
         <button
             class="save"
             type="submit"
             formaction="/tiktok/test"
             formmethod="post"
-            style="margin-top:10px;"
         >
-            🧪 Test Notification
+            🧪 Test LIVE Notification
         </button>
 
-        </form>
+
+        <button
+            class="save"
+            type="submit"
+            formaction="/tiktok/test-post"
+            formmethod="post"
+        >
+            🎬 Test POST Notification
+        </button>
+
+    </form>
 
 </div>
 

@@ -248,7 +248,6 @@ async def live_checker():
         except Exception as e:
             print(f"❌ Gagal cek @{username}: {e}")
 
-
 # ==========================================
 # BOT READY + HELLO
 # ==========================================
@@ -905,6 +904,85 @@ async def tiktok_callback(request):
     )
 
 
+async def tiktok_videos(request):
+    try:
+        with open("tiktok_token.json", "r", encoding="utf-8") as f:
+            token_data = json.load(f)
+    except FileNotFoundError:
+        return web.json_response(
+            {
+                "status": "error",
+                "message": "TikTok belum terhubung. Login lewat /tiktok/login dulu."
+            },
+            status=400
+        )
+
+    access_token = token_data.get("access_token")
+
+    if not access_token:
+        return web.json_response(
+            {
+                "status": "error",
+                "message": "Access token TikTok tidak ditemukan."
+            },
+            status=400
+        )
+
+    url = (
+        "https://open.tiktokapis.com/v2/video/list/"
+        "?fields=id,title,video_description,"
+        "duration,cover_image_url,share_url,create_time"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "max_count": 10
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            url,
+            headers=headers,
+            json=payload
+        ) as response:
+
+            try:
+                result = await response.json()
+            except Exception:
+                text = await response.text()
+
+                return web.json_response(
+                    {
+                        "status": "error",
+                        "message": "Response TikTok bukan JSON.",
+                        "response": text
+                    },
+                    status=500
+                )
+
+            if response.status != 200:
+                return web.json_response(
+                    {
+                        "status": "error",
+                        "tiktok_response": result
+                    },
+                    status=response.status
+                )
+
+    videos = result.get("data", {}).get("videos", [])
+
+    return web.json_response(
+        {
+            "status": "success",
+            "video_count": len(videos),
+            "videos": videos
+        }
+    )
+
 async def home_page(request):
     html = """
     <!DOCTYPE html>
@@ -938,6 +1016,7 @@ async def start_web_server():
     )
 
     app.router.add_get("/tiktok/callback", tiktok_callback)
+    app.router.add_get("/tiktok/videos", tiktok_videos)
 
     app.router.add_get(
         "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
