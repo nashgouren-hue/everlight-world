@@ -582,6 +582,45 @@ def test_tiktok_notification():
 
 
 # ==================================================
+# GENERAL SETTINGS
+# ==================================================
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings_page():
+    settings = load_settings()
+
+    if request.method == "POST":
+        settings["bot_status"] = request.form.get(
+            "bot_status",
+            "Everlight Virtual"
+        )
+
+        settings["bot_activity_type"] = request.form.get(
+            "bot_activity_type",
+            "watching"
+        )
+
+        settings["command_prefix"] = request.form.get(
+            "command_prefix",
+            "!"
+        )
+
+        save_settings(settings)
+
+        return redirect(
+            url_for(
+                "settings_page",
+                saved="1"
+            )
+        )
+
+    return render_template(
+        "settings.html",
+        settings=settings
+    )
+
+
+# ==================================================
 # START DASHBOARD
 # ==================================================
 

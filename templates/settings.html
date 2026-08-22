@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everlight Settings</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #0b0b14;
+            color: white;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #12121f;
+            padding: 25px 18px;
+            border-right: 1px solid #29293d;
+        }
+
+        .logo {
+            font-size: 23px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #8d8da3;
+            font-size: 13px;
+            margin-bottom: 35px;
+        }
+
+        .menu {
+            display: block;
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            border-radius: 9px;
+            color: #bcbccc;
+            text-decoration: none;
+        }
+
+        .menu:hover {
+            background: #222238;
+            color: white;
+        }
+
+        .active {
+            background: #30285a;
+            color: white;
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px;
+            max-width: 950px;
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: #9292a5;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #151522;
+            border: 1px solid #29293d;
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 22px;
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 18px 0 8px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #35354a;
+            background: #0f0f1b;
+            color: white;
+            font-size: 15px;
+        }
+
+        .help {
+            color: #8d8da3;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .success {
+            background: #103b29;
+            border: 1px solid #247c53;
+            color: #8ff0ba;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 22px;
+        }
+
+        .save-button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 9px;
+            background: #6657d9;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .save-button:hover {
+            background: #7869ef;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+
+        <div class="logo">
+            ✨ EVERLIGHT
+        </div>
+
+        <div class="subtitle">
+            Bot Control Center
+        </div>
+
+        <a class="menu" href="/">
+            🏠 Overview
+        </a>
+
+        <a class="menu" href="/welcome">
+            👋 Welcome
+        </a>
+
+        <a class="menu" href="/autorole">
+            🌙 Auto Role
+        </a>
+
+        <a class="menu" href="/tiktok">
+            🎵 TikTok
+        </a>
+
+        <a class="menu" href="/moderation">
+            🛡️ Moderation
+        </a>
+
+        <a class="menu active" href="/settings">
+            ⚙️ Settings
+        </a>
+
+    </div>
+
+
+    <div class="content">
+
+        <h1>⚙️ Bot Settings</h1>
+
+        <p class="description">
+            Pengaturan umum Everlight Discord Bot.
+        </p>
+
+        {% if request.args.get("saved") %}
+        <div class="success">
+            ✅ Settings berhasil disimpan!
+        </div>
+        {% endif %}
+
+
+        <form method="POST">
+
+            <div class="card">
+
+                <h2>🤖 Bot Presence</h2>
+
+                <label>
+                    Status / Activity Text
+                </label>
+
+                <input
+                    type="text"
+                    name="bot_status"
+                    value="{{ settings.get('bot_status', 'Everlight Virtual') }}"
+                    placeholder="Everlight Virtual"
+                >
+
+                <div class="help">
+                    Teks aktivitas yang nantinya dapat digunakan oleh bot.
+                    Contoh: Everlight Virtual
+                </div>
+
+
+                <label>
+                    Activity Type
+                </label>
+
+                <select name="bot_activity_type">
+
+                    <option
+                        value="watching"
+                        {% if settings.get('bot_activity_type', 'watching') == 'watching' %}selected{% endif %}
+                    >
+                        👀 Watching
+                    </option>
+
+                    <option
+                        value="playing"
+                        {% if settings.get('bot_activity_type') == 'playing' %}selected{% endif %}
+                    >
+                        🎮 Playing
+                    </option>
+
+                    <option
+                        value="listening"
+                        {% if settings.get('bot_activity_type') == 'listening' %}selected{% endif %}
+                    >
+                        🎵 Listening
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="card">
+
+                <h2>⌨️ Commands</h2>
+
+                <label>
+                    Command Prefix
+                </label>
+
+                <input
+                    type="text"
+                    name="command_prefix"
+                    value="{{ settings.get('command_prefix', '!') }}"
+                    maxlength="5"
+                    placeholder="!"
+                >
+
+                <div class="help">
+                    Prefix untuk command berbasis teks, misalnya
+                    !help atau !ping. Slash command seperti /warn
+                    tidak memakai prefix ini.
+                </div>
+
+            </div>
+
+
+            <button
+                class="save-button"
+                type="submit"
+            >
+                💾 Save Settings
+            </button>
+
+        </form>
+
+    </div>
+
+</body>
+</html>
