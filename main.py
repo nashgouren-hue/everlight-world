@@ -12,6 +12,20 @@ from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
 
 
+SETTINGS_FILE = "welcome_settings.json"
+
+
+def load_settings():
+    if not os.path.exists(SETTINGS_FILE):
+        return {}
+
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError) as error:
+        print(f"❌ Gagal membaca settings: {error}")
+        return {}
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 LIVE_CHANNEL_ID = 1513414157897043998
 
@@ -246,9 +260,47 @@ async def on_ready():
     print(f"Login sebagai: {bot.user}")
     print("==============================")
 
+    # Ambil Bot Presence dari dashboard
+    settings = load_settings()
+
+    status_text = settings.get(
+        "bot_status",
+        "Everlight Virtual"
+    )
+
+    activity_type = settings.get(
+        "bot_activity_type",
+        "watching"
+    )
+
+    if activity_type == "playing":
+        activity = discord.Game(
+            name=status_text
+        )
+
+    elif activity_type == "listening":
+        activity = discord.Activity(
+            type=discord.ActivityType.listening,
+            name=status_text
+        )
+
+    else:
+        activity = discord.Activity(
+            type=discord.ActivityType.watching,
+            name=status_text
+        )
+
+    await bot.change_presence(
+        status=discord.Status.online,
+        activity=activity
+    )
+
+    print(
+        f"Bot Presence: {activity_type} {status_text}"
+    )
+
     if not live_checker.is_running():
         live_checker.start()
-
 
 @bot.tree.command(name="hello", description="Say hello to Everlight!")
 async def hello(interaction: discord.Interaction):
