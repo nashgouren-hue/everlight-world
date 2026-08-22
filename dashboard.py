@@ -1,10 +1,22 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 import json
 import os
 import requests
 
 
 app = Flask(__name__)
+
+app.secret_key = os.environ.get(
+    "FLASK_SECRET_KEY",
+    "everlight-dev-secret"
+)
+
+TIKTOK_CLIENT_KEY = os.environ.get("TIKTOK_CLIENT_KEY", "")
+TIKTOK_CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET", "")
+
+TIKTOK_REDIRECT_URI = (
+    "https://everlight-world-production.up.railway.app/tiktok/callback"
+)
 
 SETTINGS_FILE = "welcome_settings.json"
 
@@ -939,6 +951,139 @@ def settings_page():
     return render_template(
         "settings.html",
         settings=settings
+    )
+
+# ==================================================
+# TIKTOK LOGIN KIT
+# ==================================================
+
+@app.route("/tiktok/login")
+def tiktok_login():
+
+    if not TIKTOK_CLIENT_KEY:
+        return "TIKTOK_CLIENT_KEY belum diatur di Railway.", 500
+
+    # Token acak untuk melindungi proses login
+    state = os.urandom(24).hex()
+    session["tiktok_oauth_state"] = state
+
+    params = {
+        "client_key": TIKTOK_CLIENT_KEY,
+        "response_type": "code",
+        "scope": "user.info.basic,video.list",
+        "redirect_uri": TIKTOK_REDIRECT_URI,
+        "state": state
+    }
+
+    from urllib.parse import urlencode
+
+    authorization_url = (
+        "https://www.tiktok.com/v2/auth/authorize/?"
+        + urlencode(params)
+    )
+
+    return redirect(authorization_url)
+
+
+@app.route("/tiktok/callback")
+def tiktok_callback():
+
+    error = request.args.get("error")
+
+    if error:
+        error_description = request.args.get(
+            "error_description",
+            "TikTok authorization failed."
+        )
+
+        return (
+            f"TikTok authorization error: "
+            f"{error_description}",
+            400
+        )
+
+    code = request.args.get("code")
+    returned_state = request.args.get("state")
+
+    saved_state = session.pop(
+        "tiktok_oauth_state",
+        None
+    )
+
+    if not code:
+        return "Authorization code TikTok tidak ditemukan.", 400
+
+    if (
+        not returned_state
+        or not saved_state
+        or returned_state != saved_state
+    ):
+        return "OAuth state TikTok tidak valid.", 400
+
+    if not TIKTOK_CLIENT_KEY or not TIKTOK_CLIENT_SECRET:
+        return (
+            "TikTok Client Key / Client Secret "
+            "belum diatur di Railway.",
+            500
+        )
+
+    token_response = requests.post(
+        "https://open.tiktokapis.com/v2/oauth/token/",
+        headers={
+            "Content-Type":
+            "application/x-www-form-urlencoded"
+        },
+        data={
+            "client_key": TIKTOK_CLIENT_KEY,
+            "client_secret": TIKTOK_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": TIKTOK_REDIRECT_URI
+        },
+        timeout=20
+    )
+
+    try:
+        token_data = token_response.json()
+
+    except ValueError:
+        return (
+            "TikTok memberikan response token "
+            "yang tidak valid.",
+            500
+        )
+
+    if token_response.status_code != 200:
+        return (
+            "Gagal mendapatkan TikTok access token: "
+            f"{token_data}",
+            400
+        )
+
+    access_token = token_data.get("access_token")
+    refresh_token = token_data.get("refresh_token")
+    open_id = token_data.get("open_id")
+    granted_scope = token_data.get("scope", "")
+
+    if not access_token:
+        return (
+            "TikTok tidak memberikan access token: "
+            f"{token_data}",
+            400
+        )
+
+    # SEMENTARA untuk tahap testing.
+    # Jangan menampilkan access_token atau refresh_token
+    # ke halaman/browser/log.
+    session["tiktok_connected"] = True
+    session["tiktok_open_id"] = open_id
+    session["tiktok_scope"] = granted_scope
+
+    return redirect(
+        url_for(
+            "tiktok",
+            connected="1"
+        )
     )
 
 # ==================================================
