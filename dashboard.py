@@ -18,6 +18,70 @@ TIKTOK_REDIRECT_URI = (
     "https://everlight-world-production.up.railway.app/tiktok/callback"
 )
 
+@app.route("/tiktok/videos")
+def tiktok_videos():
+
+    if not os.path.exists(TIKTOK_TOKEN_FILE):
+        return (
+            "Belum ada akun TikTok yang terhubung. "
+            "Login lewat /tiktok/login dulu.",
+            400
+        )
+
+    with open(TIKTOK_TOKEN_FILE, "r", encoding="utf-8") as f:
+        token_data = json.load(f)
+
+    access_token = token_data.get("access_token")
+
+    if not access_token:
+        return "TikTok access token tidak ditemukan.", 400
+
+    response = requests.post(
+        "https://open.tiktokapis.com/v2/video/list/",
+        params={
+            "fields": (
+                "id,title,video_description,"
+                "duration,cover_image_url,"
+                "share_url,create_time"
+            )
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "max_count": 10
+        },
+        timeout=20
+    )
+
+    try:
+        data = response.json()
+    except ValueError:
+        return "TikTok memberikan response yang tidak valid.", 500
+
+    if response.status_code != 200:
+        return {
+            "status": "error",
+            "tiktok_response": data
+        }, response.status_code
+
+    videos = data.get("data", {}).get("videos", [])
+
+    # Jangan tampilkan access token ke browser.
+    return {
+        "status": "success",
+        "video_count": len(videos),
+        "videos": videos
+    }
+
+TIKTOK_TOKEN_FILE = "tiktok_tokens.json"
+
+
+def save_tiktok_token(token_data):
+    with open(TIKTOK_TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(token_data, f, indent=4)
+
 SETTINGS_FILE = "welcome_settings.json"
 
 
@@ -1071,6 +1135,19 @@ def tiktok_callback():
             f"{token_data}",
             400
         )
+
+    save_tiktok_token({
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "open_id": open_id,
+        "scope": granted_scope,
+        "expires_in": token_data.get("expires_in"),
+        "refresh_expires_in": token_data.get("refresh_expires_in")
+    })
+
+    print("✅ TikTok account connected.")
+    print(f"Open ID: {open_id}")
+    print(f"Scopes: {granted_scope}")
 
     # SEMENTARA untuk tahap testing.
     # Jangan menampilkan access_token atau refresh_token
