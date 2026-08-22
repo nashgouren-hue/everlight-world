@@ -3,6 +3,7 @@ import json
 import os
 import requests
 
+
 app = Flask(__name__)
 
 SETTINGS_FILE = "welcome_settings.json"
@@ -14,6 +15,7 @@ SETTINGS_FILE = "welcome_settings.json"
 
 def load_settings():
     default_settings = {
+        # Welcome
         "avatar_size": 180,
         "avatar_x": 510,
         "avatar_y": 25,
@@ -22,15 +24,17 @@ def load_settings():
         "welcome_channel": "welcome",
         "auto_role": "moonwalker",
 
-        # Moderation Settings
+        # Moderation
         "mod_log_channel": "mod-logs",
         "mod_dm_warn": True,
         "mod_dm_kick": True,
         "mod_dm_ban": True,
         "mod_dm_timeout": True,
 
+        # TikTok Live
         "tiktok_channel": "livenotification",
 
+        # TikTok Accounts
         "tiktok_kurocat": "@kurocatkurimu",
         "enable_kurocat": True,
 
@@ -48,14 +52,14 @@ def load_settings():
 
         "tiktok_message": "🔴 {creator} sedang LIVE di TikTok!",
 
-        # Profile images
+        # TikTok Profile Images
         "image_kurocat": "",
         "image_nash": "",
         "image_haru": "",
         "image_louise": "",
         "image_everlight": "",
 
-        # Discord notification
+        # TikTok Live Notification Appearance
         "notif_title": "🔴 {creator} IS LIVE!",
         "notif_message": (
             "✨ {creator} sedang LIVE di TikTok! "
@@ -66,7 +70,40 @@ def load_settings():
         "notif_color": "#ff3355",
         "notif_button": "🔴 Watch Stream",
 
-        # Welcome message
+        # ==================================================
+        # TikTok Post Notification
+        # ==================================================
+
+        # Post ON/OFF per account
+        "enable_post_kurocat": True,
+        "enable_post_nash": True,
+        "enable_post_haru": True,
+        "enable_post_louise": True,
+        "enable_post_everlight": True,
+
+        # Discord destination channel per account
+        "post_channel_kurocat": "user-news",
+        "post_channel_nash": "user-news",
+        "post_channel_haru": "user-news",
+        "post_channel_louise": "user-news",
+        "post_channel_everlight": "user-news",
+
+        # Post Notification Appearance
+        "post_notif_title": "🎬 {creator} NEW POST!",
+        "post_notif_message": (
+            "✨ {creator} baru saja mengupload "
+            "postingan baru di TikTok!"
+        ),
+        "post_notif_mention": "none",
+        "post_notif_color": "#8b5cf6",
+        "post_notif_button": "🎬 View Post",
+
+        # General Bot Settings
+        "bot_status": "Everlight Virtual",
+        "bot_activity_type": "watching",
+        "command_prefix": "!",
+
+        # Welcome Message
         "message": """✨ **A New Star Has Appeared** ✨
 Selamat datang, {member} ✨ Kamu telah memasuki **Everlight Virtual**, tempat di mana kreativitas, persahabatan, dan mimpi bersinar bersama.
 
@@ -83,20 +120,27 @@ Kami berharap perjalananmu di sini dipenuhi tawa, kenangan indah, dan teman-tema
         return default_settings
 
     try:
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as file:
+        with open(
+            SETTINGS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
             saved_settings = json.load(file)
 
-        # Ini penting supaya setting baru tetap muncul
-        # walaupun JSON lama belum punya key tersebut.
         default_settings.update(saved_settings)
-        return default_settings
 
-    except (json.JSONDecodeError, OSError):
-        return default_settings
+    except (json.JSONDecodeError, OSError) as error:
+        print(f"Gagal membaca settings: {error}")
+
+    return default_settings
 
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as file:
+    with open(
+        SETTINGS_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
         json.dump(
             settings,
             file,
@@ -123,16 +167,37 @@ def welcome():
     settings = load_settings()
 
     if request.method == "POST":
-        # Jangan membuat dict baru karena itu bisa
-        # menghapus setting TikTok yang sudah tersimpan.
-        settings["avatar_size"] = int(request.form["avatar_size"])
-        settings["avatar_x"] = int(request.form["avatar_x"])
-        settings["avatar_y"] = int(request.form["avatar_y"])
-        settings["username_size"] = int(request.form["username_size"])
-        settings["username_y"] = int(request.form["username_y"])
-        settings["welcome_channel"] = request.form["welcome_channel"]
-        settings["auto_role"] = request.form["auto_role"]
-        settings["message"] = request.form["message"]
+        settings["avatar_size"] = int(
+            request.form["avatar_size"]
+        )
+
+        settings["avatar_x"] = int(
+            request.form["avatar_x"]
+        )
+
+        settings["avatar_y"] = int(
+            request.form["avatar_y"]
+        )
+
+        settings["username_size"] = int(
+            request.form["username_size"]
+        )
+
+        settings["username_y"] = int(
+            request.form["username_y"]
+        )
+
+        settings["welcome_channel"] = request.form[
+            "welcome_channel"
+        ]
+
+        settings["auto_role"] = request.form[
+            "auto_role"
+        ]
+
+        settings["message"] = request.form[
+            "message"
+        ]
 
         save_settings(settings)
 
@@ -158,7 +223,10 @@ def autorole():
     settings = load_settings()
 
     if request.method == "POST":
-        settings["auto_role"] = request.form["auto_role"]
+        settings["auto_role"] = request.form.get(
+            "auto_role",
+            "moonwalker"
+        )
 
         save_settings(settings)
 
@@ -189,10 +257,21 @@ def moderation():
             "mod-logs"
         )
 
-        settings["mod_dm_warn"] = "mod_dm_warn" in request.form
-        settings["mod_dm_kick"] = "mod_dm_kick" in request.form
-        settings["mod_dm_ban"] = "mod_dm_ban" in request.form
-        settings["mod_dm_timeout"] = "mod_dm_timeout" in request.form
+        settings["mod_dm_warn"] = (
+            "mod_dm_warn" in request.form
+        )
+
+        settings["mod_dm_kick"] = (
+            "mod_dm_kick" in request.form
+        )
+
+        settings["mod_dm_ban"] = (
+            "mod_dm_ban" in request.form
+        )
+
+        settings["mod_dm_timeout"] = (
+            "mod_dm_timeout" in request.form
+        )
 
         save_settings(settings)
 
@@ -208,6 +287,7 @@ def moderation():
         settings=settings
     )
 
+
 # ==================================================
 # TIKTOK SETTINGS
 # ==================================================
@@ -217,16 +297,22 @@ def tiktok():
     settings = load_settings()
 
     if request.method == "POST":
+
+        # ==================================================
+        # LIVE SETTINGS
+        # ==================================================
+
         settings["tiktok_channel"] = request.form.get(
             "tiktok_channel",
             "livenotification"
-        )
+        ).strip()
 
         # Kurocat
         settings["tiktok_kurocat"] = request.form.get(
             "tiktok_kurocat",
             "@kurocatkurimu"
-        )
+        ).strip()
+
         settings["enable_kurocat"] = (
             "enable_kurocat" in request.form
         )
@@ -235,7 +321,8 @@ def tiktok():
         settings["tiktok_nash"] = request.form.get(
             "tiktok_nash",
             "@nashgouren_"
-        )
+        ).strip()
+
         settings["enable_nash"] = (
             "enable_nash" in request.form
         )
@@ -244,7 +331,8 @@ def tiktok():
         settings["tiktok_haru"] = request.form.get(
             "tiktok_haru",
             "@hiharuhere"
-        )
+        ).strip()
+
         settings["enable_haru"] = (
             "enable_haru" in request.form
         )
@@ -253,7 +341,8 @@ def tiktok():
         settings["tiktok_louise"] = request.form.get(
             "tiktok_louise",
             "@louiegospellvt"
-        )
+        ).strip()
+
         settings["enable_louise"] = (
             "enable_louise" in request.form
         )
@@ -262,7 +351,8 @@ def tiktok():
         settings["tiktok_everlight"] = request.form.get(
             "tiktok_everlight",
             "@everlightvirtual"
-        )
+        ).strip()
+
         settings["enable_everlight"] = (
             "enable_everlight" in request.form
         )
@@ -272,7 +362,10 @@ def tiktok():
             "🔴 {creator} sedang LIVE di TikTok!"
         )
 
-        # Profile Image URLs
+        # ==================================================
+        # PROFILE IMAGES
+        # ==================================================
+
         settings["image_kurocat"] = request.form.get(
             "image_kurocat",
             ""
@@ -298,7 +391,10 @@ def tiktok():
             ""
         ).strip()
 
-        # Notification appearance
+        # ==================================================
+        # LIVE NOTIFICATION APPEARANCE
+        # ==================================================
+
         settings["notif_title"] = request.form.get(
             "notif_title",
             "🔴 {creator} IS LIVE!"
@@ -306,7 +402,10 @@ def tiktok():
 
         settings["notif_message"] = request.form.get(
             "notif_message",
-            "✨ {creator} sedang LIVE di TikTok!"
+            (
+                "✨ {creator} sedang LIVE di TikTok! "
+                "Ayo mampir dan ramaikan live-nya!"
+            )
         )
 
         settings["notif_mention"] = request.form.get(
@@ -329,6 +428,91 @@ def tiktok():
             "🔴 Watch Stream"
         )
 
+        # ==================================================
+        # POST ON/OFF
+        # ==================================================
+
+        settings["enable_post_kurocat"] = (
+            "enable_post_kurocat" in request.form
+        )
+
+        settings["enable_post_nash"] = (
+            "enable_post_nash" in request.form
+        )
+
+        settings["enable_post_haru"] = (
+            "enable_post_haru" in request.form
+        )
+
+        settings["enable_post_louise"] = (
+            "enable_post_louise" in request.form
+        )
+
+        settings["enable_post_everlight"] = (
+            "enable_post_everlight" in request.form
+        )
+
+        # ==================================================
+        # POST DESTINATION CHANNEL PER ACCOUNT
+        # ==================================================
+
+        settings["post_channel_kurocat"] = request.form.get(
+            "post_channel_kurocat",
+            "user-news"
+        ).strip()
+
+        settings["post_channel_nash"] = request.form.get(
+            "post_channel_nash",
+            "user-news"
+        ).strip()
+
+        settings["post_channel_haru"] = request.form.get(
+            "post_channel_haru",
+            "user-news"
+        ).strip()
+
+        settings["post_channel_louise"] = request.form.get(
+            "post_channel_louise",
+            "user-news"
+        ).strip()
+
+        settings["post_channel_everlight"] = request.form.get(
+            "post_channel_everlight",
+            "user-news"
+        ).strip()
+
+        # ==================================================
+        # POST NOTIFICATION APPEARANCE
+        # ==================================================
+
+        settings["post_notif_title"] = request.form.get(
+            "post_notif_title",
+            "🎬 {creator} NEW POST!"
+        )
+
+        settings["post_notif_message"] = request.form.get(
+            "post_notif_message",
+            (
+                "✨ {creator} baru saja mengupload "
+                "postingan baru di TikTok!"
+            )
+        )
+
+        settings["post_notif_mention"] = request.form.get(
+            "post_notif_mention",
+            "none"
+        )
+
+        settings["post_notif_color"] = request.form.get(
+            "post_notif_color",
+            "#8b5cf6"
+        )
+
+        settings["post_notif_button"] = request.form.get(
+            "post_notif_button",
+            "🎬 View Post"
+        )
+
         save_settings(settings)
 
         return redirect(
@@ -345,7 +529,7 @@ def tiktok():
 
 
 # ==================================================
-# TEST TIKTOK DISCORD NOTIFICATION
+# TEST TIKTOK LIVE NOTIFICATION
 # ==================================================
 
 @app.route("/tiktok/test", methods=["POST"])
@@ -360,32 +544,19 @@ def test_tiktok_notification():
             500
         )
 
-    # Untuk tombol Test Notification,
-    # sementara menggunakan Kurocat sebagai contoh.
     creator = "Kurocat Kurimu"
-
     live_url = (
         "https://www.tiktok.com/"
         "@kurocatkurimu/live"
     )
 
-    # ----------------------------------------------
-    # TITLE
-    # ----------------------------------------------
-
     title = request.form.get(
         "notif_title",
         "🔴 {creator} IS LIVE!"
-    )
-
-    title = title.replace(
+    ).replace(
         "{creator}",
         creator
     )
-
-    # ----------------------------------------------
-    # MESSAGE
-    # ----------------------------------------------
 
     message = request.form.get(
         "notif_message",
@@ -400,10 +571,6 @@ def test_tiktok_notification():
         .replace("{creator}", creator)
         .replace("{url}", live_url)
     )
-
-    # ----------------------------------------------
-    # IMAGE / BUTTON / COLOR
-    # ----------------------------------------------
 
     banner = request.form.get(
         "notif_banner",
@@ -426,21 +593,13 @@ def test_tiktok_notification():
     color_hex = request.form.get(
         "notif_color",
         "#ff3355"
-    )
-
-    color_hex = color_hex.lstrip("#")
+    ).lstrip("#")
 
     try:
-        color = int(
-            color_hex,
-            16
-        )
+        color = int(color_hex, 16)
+
     except ValueError:
         color = 0xFF3355
-
-    # ----------------------------------------------
-    # MENTION
-    # ----------------------------------------------
 
     mention_setting = request.form.get(
         "notif_mention",
@@ -456,10 +615,6 @@ def test_tiktok_notification():
     else:
         mention = ""
 
-    # ----------------------------------------------
-    # TEXT ABOVE EMBED
-    # ----------------------------------------------
-
     if mention:
         content = (
             f"{mention}\n"
@@ -468,16 +623,13 @@ def test_tiktok_notification():
             f"Live on TikTok!\n"
             f"{live_url}"
         )
+
     else:
         content = (
             f"**{creator} | Everlight VT** "
             f"Live on TikTok!\n"
             f"{live_url}"
         )
-
-    # ----------------------------------------------
-    # DISCORD EMBED
-    # ----------------------------------------------
 
     embed = {
         "title": title,
@@ -491,8 +643,6 @@ def test_tiktok_notification():
         }
     }
 
-    # Profile image diprioritaskan.
-    # Kalau kosong, gunakan banner.
     if profile_image:
         embed["image"] = {
             "url": profile_image
@@ -503,52 +653,35 @@ def test_tiktok_notification():
             "url": banner
         }
 
-    # ----------------------------------------------
-    # WATCH STREAM BUTTON
-    # ----------------------------------------------
-
-    components = [
-        {
-            "type": 1,
-            "components": [
-                {
-                    "type": 2,
-                    "style": 5,
-                    "label": button_text,
-                    "url": live_url
-                }
-            ]
-        }
-    ]
-
-    # ----------------------------------------------
-    # ALLOWED MENTIONS
-    # ----------------------------------------------
-
-    if mention_setting == "everyone":
-        allowed_mentions = {
-            "parse": ["everyone"]
-        }
-
-    else:
-        allowed_mentions = {
-            "parse": []
-        }
-
-    # ----------------------------------------------
-    # WEBHOOK PAYLOAD
-    # ----------------------------------------------
-
     payload = {
         "content": content,
-        "embeds": [embed],
-        "components": components,
-        "allowed_mentions": allowed_mentions
-    }
 
-    # ----------------------------------------------
-    # SEND TO DISCORD
-    # ----------------------------------------------
+        "embeds": [
+            embed
+        ],
+
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {
+                        "type": 2,
+                        "style": 5,
+                        "label": button_text,
+                        "url": live_url
+                    }
+                ]
+            }
+        ],
+
+        "allowed_mentions": {
+            "parse": (
+                ["everyone"]
+                if mention_setting == "everyone"
+                else []
+            )
+        }
+    }
 
     try:
         response = requests.post(
@@ -577,6 +710,195 @@ def test_tiktok_notification():
         url_for(
             "tiktok",
             tested="1"
+        )
+    )
+
+
+# ==================================================
+# TEST TIKTOK POST NOTIFICATION
+# ==================================================
+
+@app.route("/tiktok/test-post", methods=["POST"])
+def test_tiktok_post_notification():
+    """
+    Test sementara menggunakan Kurocat.
+    Nanti pengiriman otomatis tidak bergantung pada
+    satu channel global lagi.
+    """
+
+    webhook_url = os.environ.get(
+        "DISCORD_POST_WEBHOOK"
+    )
+
+    if not webhook_url:
+        return (
+            "DISCORD_POST_WEBHOOK belum diatur.",
+            500
+        )
+
+    creator = "Kurocat Kurimu"
+
+    post_url = (
+        "https://www.tiktok.com/"
+        "@kurocatkurimu"
+    )
+
+    selected_channel = request.form.get(
+        "post_channel_kurocat",
+        "user-news"
+    ).strip()
+
+    title = request.form.get(
+        "post_notif_title",
+        "🎬 {creator} NEW POST!"
+    ).replace(
+        "{creator}",
+        creator
+    )
+
+    message = request.form.get(
+        "post_notif_message",
+        "✨ {creator} baru saja mengupload postingan baru di TikTok!"
+    )
+
+    message = (
+        message
+        .replace("{creator}", creator)
+        .replace("{url}", post_url)
+    )
+
+    button_text = request.form.get(
+        "post_notif_button",
+        "🎬 View Post"
+    ).strip()
+
+    if not button_text:
+        button_text = "🎬 View Post"
+
+    color_hex = request.form.get(
+        "post_notif_color",
+        "#8b5cf6"
+    ).lstrip("#")
+
+    try:
+        color = int(
+            color_hex,
+            16
+        )
+
+    except ValueError:
+        color = 0x8B5CF6
+
+    mention_setting = request.form.get(
+        "post_notif_mention",
+        "none"
+    )
+
+    if mention_setting == "everyone":
+        mention = "@everyone"
+
+    elif mention_setting == "here":
+        mention = "@here"
+
+    else:
+        mention = ""
+
+    if mention:
+        content = (
+            f"{mention}\n"
+            f"**{creator} | Everlight VT** "
+            f"just uploaded a new TikTok!\n"
+            f"{post_url}"
+        )
+
+    else:
+        content = (
+            f"**{creator} | Everlight VT** "
+            f"just uploaded a new TikTok!\n"
+            f"{post_url}"
+        )
+
+    embed = {
+        "title": title,
+        "description": message,
+        "color": color,
+        "url": post_url,
+
+        "footer": {
+            "text": (
+                "EVERLIGHT VIRTUAL "
+                f"• TARGET #{selected_channel}"
+            )
+        }
+    }
+
+    profile_image = request.form.get(
+        "image_kurocat",
+        ""
+    ).strip()
+
+    if profile_image:
+        embed["image"] = {
+            "url": profile_image
+        }
+
+    payload = {
+        "content": content,
+
+        "embeds": [
+            embed
+        ],
+
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {
+                        "type": 2,
+                        "style": 5,
+                        "label": button_text,
+                        "url": post_url
+                    }
+                ]
+            }
+        ],
+
+        "allowed_mentions": {
+            "parse": (
+                ["everyone"]
+                if mention_setting == "everyone"
+                else []
+            )
+        }
+    }
+
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            timeout=10
+        )
+
+    except requests.RequestException as error:
+        return (
+            f"Gagal terhubung ke Discord webhook: {error}",
+            500
+        )
+
+    if response.status_code not in (
+        200,
+        204
+    ):
+        return (
+            "Gagal mengirim test POST notification: "
+            f"{response.text}",
+            500
+        )
+
+    return redirect(
+        url_for(
+            "tiktok",
+            tested_post="1"
         )
     )
 
@@ -619,6 +941,191 @@ def settings_page():
         settings=settings
     )
 
+# ==================================================
+# LEGAL PAGES
+# ==================================================
+
+@app.route("/terms")
+def terms():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Terms of Service - Everlight Bot</title>
+        <style>
+            body {
+                background: #0b0b14;
+                color: #eeeeff;
+                font-family: Arial, sans-serif;
+                max-width: 850px;
+                margin: 0 auto;
+                padding: 50px 25px;
+                line-height: 1.7;
+            }
+            h1, h2 {
+                color: white;
+            }
+            a {
+                color: #9d8cff;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>Everlight Bot - Terms of Service</h1>
+
+        <p>Last updated: August 22, 2026</p>
+
+        <p>
+            Everlight Bot is a Discord integration operated for
+            Everlight Virtual. The service provides community management
+            features and notifications related to authorized TikTok
+            creator accounts.
+        </p>
+
+        <h2>TikTok Integration</h2>
+
+        <p>
+            Users may voluntarily connect their TikTok account through
+            TikTok Login Kit. Everlight Bot may access information
+            authorized by the user, including basic account information
+            and public video information.
+        </p>
+
+        <h2>Use of the Service</h2>
+
+        <p>
+            TikTok information accessed through the service is used to
+            provide Everlight Virtual Discord features, including
+            notifications when an authorized creator publishes new
+            public TikTok content.
+        </p>
+
+        <h2>User Authorization</h2>
+
+        <p>
+            Users are responsible for connecting only TikTok accounts
+            they are authorized to use. Access to TikTok information
+            depends on permissions granted by the TikTok account holder.
+        </p>
+
+        <h2>Availability</h2>
+
+        <p>
+            Everlight Bot may be modified, temporarily unavailable,
+            or discontinued at any time.
+        </p>
+
+        <h2>Changes</h2>
+
+        <p>
+            These Terms may be updated when features or integrations
+            change.
+        </p>
+
+        <p>
+            <a href="/">Return to Everlight Bot</a>
+        </p>
+
+    </body>
+    </html>
+    """
+
+
+@app.route("/privacy")
+def privacy():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Privacy Policy - Everlight Bot</title>
+        <style>
+            body {
+                background: #0b0b14;
+                color: #eeeeff;
+                font-family: Arial, sans-serif;
+                max-width: 850px;
+                margin: 0 auto;
+                padding: 50px 25px;
+                line-height: 1.7;
+            }
+            h1, h2 {
+                color: white;
+            }
+            a {
+                color: #9d8cff;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>Everlight Bot - Privacy Policy</h1>
+
+        <p>Last updated: August 22, 2026</p>
+
+        <p>
+            This Privacy Policy explains how Everlight Bot uses
+            information when a user connects a TikTok account.
+        </p>
+
+        <h2>Information We Access</h2>
+
+        <p>
+            With user authorization, Everlight Bot may access basic
+            TikTok profile information and information about the user's
+            public TikTok videos through TikTok's official APIs.
+        </p>
+
+        <h2>How Information Is Used</h2>
+
+        <p>
+            TikTok information is used to identify authorized creator
+            accounts and provide Discord notifications when new public
+            TikTok content is published.
+        </p>
+
+        <h2>Data Sharing</h2>
+
+        <p>
+            Everlight Bot does not sell TikTok user information.
+            Information obtained through TikTok is used only for
+            functionality associated with Everlight Virtual services.
+        </p>
+
+        <h2>Authorization and Access</h2>
+
+        <p>
+            TikTok access is provided only after the account holder
+            authorizes Everlight Bot through TikTok Login Kit.
+        </p>
+
+        <h2>Data Retention</h2>
+
+        <p>
+            Information is retained only as necessary to operate the
+            connected TikTok and Discord notification features.
+        </p>
+
+        <h2>Changes to This Policy</h2>
+
+        <p>
+            This Privacy Policy may be updated when Everlight Bot
+            features or integrations change.
+        </p>
+
+        <p>
+            <a href="/">Return to Everlight Bot</a>
+        </p>
+
+    </body>
+    </html>
+    """
 
 # ==================================================
 # START DASHBOARD
