@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Everlight Moderation</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #9ca3af;
+            margin-top: 0;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: white;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .help {
+            color: #8b949e;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .toggle-info span {
+            color: #8b949e;
+            font-size: 13px;
+        }
+
+        .toggle-row input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
+
+        .save-button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 9px;
+            background: #5865f2;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .save-button:hover {
+            opacity: 0.9;
+        }
+
+        .success {
+            background: #16351f;
+            border: 1px solid #238636;
+            padding: 13px;
+            border-radius: 9px;
+            margin-bottom: 20px;
+        }
+
+        .commands {
+            line-height: 1.8;
+        }
+
+        code {
+            background: #0d1117;
+            padding: 4px 7px;
+            border-radius: 5px;
+            color: #c9d1d9;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #8ab4ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a class="back" href="/">
+        ← Back to Dashboard
+    </a>
+
+    <div class="header">
+        <h1>🛡️ Moderation</h1>
+        <p>
+            Manage Everlight Discord moderation settings.
+        </p>
+    </div>
+
+    {% if request.args.get("saved") %}
+    <div class="success">
+        ✅ Moderation settings saved successfully!
+    </div>
+    {% endif %}
+
+    <form method="POST">
+
+        <div class="card">
+
+            <h2>📋 Moderation Log</h2>
+
+            <label>
+                Moderation Log Channel
+            </label>
+
+            <input
+                type="text"
+                name="mod_log_channel"
+                value="{{ settings.get('mod_log_channel', 'mod-logs') }}"
+                placeholder="mod-logs"
+            >
+
+            <div class="help">
+                Masukkan nama channel tanpa tanda #.
+                Contoh: mod-logs
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>📨 Member DM Notifications</h2>
+
+            <div class="toggle-row">
+
+                <div class="toggle-info">
+                    <strong>⚠️ Warning DM</strong>
+                    <span>
+                        Kirim DM ketika member mendapat warning.
+                    </span>
+                </div>
+
+                <input
+                    type="checkbox"
+                    name="mod_dm_warn"
+                    {% if settings.get('mod_dm_warn', True) %}checked{% endif %}
+                >
+
+            </div>
+
+
+            <div class="toggle-row">
+
+                <div class="toggle-info">
+                    <strong>👢 Kick DM</strong>
+                    <span>
+                        Kirim pemberitahuan sebelum member di-kick.
+                    </span>
+                </div>
+
+                <input
+                    type="checkbox"
+                    name="mod_dm_kick"
+                    {% if settings.get('mod_dm_kick', True) %}checked{% endif %}
+                >
+
+            </div>
+
+
+            <div class="toggle-row">
+
+                <div class="toggle-info">
+                    <strong>🔨 Ban DM</strong>
+                    <span>
+                        Kirim pemberitahuan sebelum member di-ban.
+                    </span>
+                </div>
+
+                <input
+                    type="checkbox"
+                    name="mod_dm_ban"
+                    {% if settings.get('mod_dm_ban', True) %}checked{% endif %}
+                >
+
+            </div>
+
+
+            <div class="toggle-row">
+
+                <div class="toggle-info">
+                    <strong>⏳ Timeout DM</strong>
+                    <span>
+                        Kirim DM ketika member mendapat timeout.
+                    </span>
+                </div>
+
+                <input
+                    type="checkbox"
+                    name="mod_dm_timeout"
+                    {% if settings.get('mod_dm_timeout', True) %}checked{% endif %}
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>🛡️ Moderation Commands</h2>
+
+            <div class="commands">
+
+                <div>
+                    <code>/warn</code>
+                    — Berikan warning
+                </div>
+
+                <div>
+                    <code>/warnings</code>
+                    — Lihat warning member
+                </div>
+
+                <div>
+                    <code>/unwarn</code>
+                    — Hapus satu warning
+                </div>
+
+                <div>
+                    <code>/clearwarnings</code>
+                    — Hapus semua warning
+                </div>
+
+                <div>
+                    <code>/kick</code>
+                    — Kick member
+                </div>
+
+                <div>
+                    <code>/ban</code>
+                    — Ban member
+                </div>
+
+                <div>
+                    <code>/timeout</code>
+                    — Timeout member
+                </div>
+
+                <div>
+                    <code>/untimeout</code>
+                    — Hapus timeout
+                </div>
+
+                <div>
+                    <code>/purge</code>
+                    — Hapus banyak pesan
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="save-button"
+        >
+            💾 Save Moderation Settings
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>
