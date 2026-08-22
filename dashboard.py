@@ -22,6 +22,13 @@ def load_settings():
         "welcome_channel": "welcome",
         "auto_role": "moonwalker",
 
+        # Moderation Settings
+        "mod_log_channel": "mod-logs",
+        "mod_dm_warn": True,
+        "mod_dm_kick": True,
+        "mod_dm_ban": True,
+        "mod_dm_timeout": True,
+
         "tiktok_channel": "livenotification",
 
         "tiktok_kurocat": "@kurocatkurimu",
@@ -167,6 +174,39 @@ def autorole():
         settings=settings
     )
 
+
+# ==================================================
+# MODERATION SETTINGS
+# ==================================================
+
+@app.route("/moderation", methods=["GET", "POST"])
+def moderation():
+    settings = load_settings()
+
+    if request.method == "POST":
+        settings["mod_log_channel"] = request.form.get(
+            "mod_log_channel",
+            "mod-logs"
+        )
+
+        settings["mod_dm_warn"] = "mod_dm_warn" in request.form
+        settings["mod_dm_kick"] = "mod_dm_kick" in request.form
+        settings["mod_dm_ban"] = "mod_dm_ban" in request.form
+        settings["mod_dm_timeout"] = "mod_dm_timeout" in request.form
+
+        save_settings(settings)
+
+        return redirect(
+            url_for(
+                "moderation",
+                saved="1"
+            )
+        )
+
+    return render_template(
+        "moderation.html",
+        settings=settings
+    )
 
 # ==================================================
 # TIKTOK SETTINGS
