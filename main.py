@@ -328,17 +328,51 @@ async def live_checker():
 
 def load_tiktok_token():
 
+    # PRIORITAS 1:
+    # Ambil token dari Railway Variables
+    access_token = os.getenv("TIKTOK_ACCESS_TOKEN")
+    refresh_token = os.getenv("TIKTOK_REFRESH_TOKEN")
+    open_id = os.getenv("TIKTOK_OPEN_ID")
+
+    if access_token:
+
+        print(
+            "TikTok token ditemukan dari Railway Variables.",
+            flush=True
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "open_id": open_id
+        }
+
+    # PRIORITAS 2:
+    # Kalau belum ada di Railway Variables,
+    # baca token hasil login dari file.
     try:
 
         with open(
-            "tiktok_token.json",
+            "/data/tiktok_token.json",
             "r",
             encoding="utf-8"
         ) as f:
 
-            return json.load(f)
+            token_data = json.load(f)
+
+        print(
+            "TikTok token ditemukan dari tiktok_token.json.",
+            flush=True
+        )
+
+        return token_data
 
     except FileNotFoundError:
+
+        print(
+            "TikTok token belum tersedia.",
+            flush=True
+        )
 
         return None
 
@@ -350,7 +384,6 @@ def load_tiktok_token():
         )
 
         return None
-
 
 # =====================================================
 # TIKTOK VIDEO API
@@ -1633,7 +1666,7 @@ async def tiktok_callback(request):
     }
 
     with open(
-        "tiktok_token.json",
+        "/data/tiktok_token.json",
         "w",
         encoding="utf-8"
     ) as f:

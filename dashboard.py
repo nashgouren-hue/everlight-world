@@ -82,7 +82,7 @@ def save_tiktok_token(token_data):
     with open(TIKTOK_TOKEN_FILE, "w", encoding="utf-8") as f:
         json.dump(token_data, f, indent=4)
 
-SETTINGS_FILE = "welcome_settings.json"
+SETTINGS_FILE = "/data/welcome_settings.json"
 
 
 # ==================================================
