@@ -37,6 +37,14 @@ TIKTOK_LIVE_ACCOUNTS = [
     "everlightvirtual",
 ]
 
+TIKTOK_POST_CHANNELS = {
+    "kurocatkurimu": 1513404982471164034,
+    "nashgouren_": 1513405816714170408,
+    "hiharuhere": 1516754539166957568,
+    "louiegospellvt": 1516756829412134942,
+    "everlightvirtual": 1513443800327000117,
+}
+
 TIKTOK_CREATORS = {
     "kurocatkurimu": {
         "name": "Kurocat Kurimu",
@@ -300,6 +308,9 @@ async def on_ready():
 
     if not live_checker.is_running():
         live_checker.start()
+
+if not tiktok_video_checker.is_running():
+    tiktok_video_checker.start()
 
 @bot.tree.command(name="hello", description="Say hello to Everlight!")
 async def hello(interaction: discord.Interaction):
@@ -982,6 +993,126 @@ async def tiktok_videos(request):
             "videos": videos
         }
     )
+
+async def get_latest_tiktok_video():
+    try:
+        with open("tiktok_token.json", "r", encoding="utf-8") as f:
+            token_data = json.load(f)
+    except FileNotFoundError:
+        print("TikTok belum terhubung.")
+        return None
+
+    access_token = token_data.get("access_token")
+
+    if not access_token:
+        print("TikTok access token tidak ditemukan.")
+        return None
+
+    url = (
+        "https://open.tiktokapis.com/v2/video/list/"
+        "?fields=id,title,video_description,"
+        "duration,cover_image_url,share_url,create_time"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "max_count": 10
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url,
+                headers=headers,
+                json=payload
+            ) as response:
+
+                result = await response.json()
+
+                if response.status != 200:
+                    print("Gagal mengambil video TikTok:", result)
+                    return None
+
+                videos = result.get("data", {}).get("videos", [])
+
+                if not videos:
+                    return None
+
+                videos.sort(
+                    key=lambda video: video.get("create_time", 0),
+                    reverse=True
+                )
+
+                return videos[0]
+
+    except Exception as e:
+        print("Error get_latest_tiktok_video:", e)
+        return None
+
+last_tiktok_video_id = None
+
+last_tiktok_video_id = None
+
+async def check_new_tiktok_video():
+    global last_tiktok_video_id
+
+    video = await get_latest_tiktok_video()
+
+    if not video:
+        return
+
+    video_id = video.get("id")
+
+    if not video_id:
+        return
+
+    # Pertama kali bot cek, simpan video terakhir tanpa kirim notif
+    if last_tiktok_video_id is None:
+        last_tiktok_video_id = video_id
+        print(f"Video TikTok awal tersimpan: {video_id}")
+        return
+
+    # Tidak ada video baru
+    if video_id == last_tiktok_video_id:
+        return
+
+    # Ada video baru
+    last_tiktok_video_id = video_id
+
+    share_url = video.get("share_url")
+    title = video.get("title") or video.get("video_description") or "Postingan TikTok baru!"
+
+    channel = bot.get_channel(TIKTOK_POST_CHANNELS["kurocatkurimu"])
+
+    if channel:
+        embed = discord.Embed(
+            title="✨ Kurocat Kurimu baru saja upload di TikTok!",
+            description=title[:4000],
+            url=share_url,
+            color=discord.Color.from_rgb(255, 80, 150)
+        )
+
+        cover = video.get("cover_image_url")
+        if cover:
+            embed.set_image(url=cover)
+
+        embed.set_footer(text="EVERLIGHT VIRTUAL")
+
+        await channel.send(
+            content="✨ **NEW TIKTOK POST!**",
+            embed=embed
+        )
+
+        print(f"✅ Notif TikTok terkirim: {share_url}")
+
+@tasks.loop(minutes=2)
+async def tiktok_video_checker():
+    await check_new_tiktok_video()
+
 
 async def home_page(request):
     html = """
