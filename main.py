@@ -5,6 +5,7 @@ import discord
 import aiohttp
 import io
 import sqlite3
+
 from discord import app_commands
 from discord.ext import tasks
 from TikTokLive import TikTokLiveClient
@@ -12,8 +13,23 @@ from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
 
 
+# =====================================================
+# CONFIG
+# =====================================================
+
 TOKEN = os.getenv("DISCORD_TOKEN")
+
+# Channel notifikasi LIVE TikTok
 LIVE_CHANNEL_ID = 1513414157897043998
+
+# Channel notifikasi POST TikTok
+TIKTOK_POST_CHANNELS = {
+    "kurocatkurimu": 1513404982471164034,
+    "nashgouren_": 1513405816714170408,
+    "hiharuhere": 1516754539166957568,
+    "louiegospellvt": 1516756829412134942,
+    "everlightvirtual": 1513443800327000117,
+}
 
 TIKTOK_LIVE_ACCOUNTS = [
     "kurocatkurimu",
@@ -47,9 +63,9 @@ TIKTOK_CREATORS = {
 }
 
 
-# ==========================================
-# EVERLIGHT MODERATION DATABASE
-# ==========================================
+# =====================================================
+# DATABASE
+# =====================================================
 
 db = sqlite3.connect("warnings.db")
 cursor = db.cursor()
@@ -68,9 +84,9 @@ CREATE TABLE IF NOT EXISTS warnings (
 db.commit()
 
 
-# ==========================================
+# =====================================================
 # DISCORD BOT
-# ==========================================
+# =====================================================
 
 intents = discord.Intents.default()
 intents.members = True
@@ -78,23 +94,26 @@ intents.message_content = True
 
 
 class EverlightBot(discord.Client):
+
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
+        self.web_runner = None
 
     async def setup_hook(self):
         await self.tree.sync()
-        await start_web_server()
+        self.web_runner = await start_web_server()
 
 
 bot = EverlightBot()
 
 
-# ==========================================
+# =====================================================
 # WELCOME IMAGE
-# ==========================================
+# =====================================================
 
 async def create_welcome_image(member):
+
     template_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "welcome.png"
@@ -107,13 +126,21 @@ async def create_welcome_image(member):
         format="png"
     ).read()
 
-    avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
+    avatar = Image.open(
+        io.BytesIO(avatar_bytes)
+    ).convert("RGBA")
 
     avatar_size = 300
     avatar = avatar.resize((avatar_size, avatar_size))
 
-    mask = Image.new("L", (avatar_size, avatar_size), 0)
+    mask = Image.new(
+        "L",
+        (avatar_size, avatar_size),
+        0
+    )
+
     mask_draw = ImageDraw.Draw(mask)
+
     mask_draw.ellipse(
         (0, 0, avatar_size, avatar_size),
         fill=255
@@ -129,10 +156,14 @@ async def create_welcome_image(member):
     )
 
     draw = ImageDraw.Draw(image)
+
     nama = member.display_name
 
     try:
-        font_nama = ImageFont.truetype("arialbd.ttf", 100)
+        font_nama = ImageFont.truetype(
+            "arialbd.ttf",
+            100
+        )
     except Exception:
         font_nama = ImageFont.load_default()
 
@@ -144,7 +175,10 @@ async def create_welcome_image(member):
 
     text_width = bbox[2] - bbox[0]
 
-    nama_x = (image.width - text_width) // 2
+    nama_x = (
+        image.width - text_width
+    ) // 2
+
     nama_y = 410
 
     draw.text(
@@ -157,7 +191,12 @@ async def create_welcome_image(member):
     )
 
     output = io.BytesIO()
-    image.save(output, format="PNG")
+
+    image.save(
+        output,
+        format="PNG"
+    )
+
     output.seek(0)
 
     return discord.File(
@@ -166,52 +205,94 @@ async def create_welcome_image(member):
     )
 
 
-# ==========================================
+# =====================================================
 # TIKTOK LIVE CHECKER
-# ==========================================
+# =====================================================
 
 live_status = {}
 
 
 @tasks.loop(seconds=60)
 async def live_checker():
-    channel = bot.get_channel(LIVE_CHANNEL_ID)
+
+    channel = bot.get_channel(
+        LIVE_CHANNEL_ID
+    )
 
     if channel is None:
-        print("❌ Channel LIVE Discord tidak ditemukan.")
+        print(
+            "ERROR: Channel LIVE Discord tidak ditemukan.",
+            flush=True
+        )
         return
 
     for username in TIKTOK_LIVE_ACCOUNTS:
-        try:
-            client = TikTokLiveClient(unique_id=f"@{username}")
-            is_live = await client.is_live()
-            sebelumnya_live = live_status.get(username, False)
 
-            print(f"TikTok @{username} | LIVE: {is_live}")
+        try:
+
+            client = TikTokLiveClient(
+                unique_id=f"@{username}"
+            )
+
+            is_live = await client.is_live()
+
+            sebelumnya_live = live_status.get(
+                username,
+                False
+            )
+
+            print(
+                f"TikTok @{username} | LIVE: {is_live}",
+                flush=True
+            )
 
             if is_live and not sebelumnya_live:
+
                 creator_info = TIKTOK_CREATORS.get(
                     username,
-                    {"name": username, "image": ""}
+                    {
+                        "name": username,
+                        "image": ""
+                    }
                 )
-                creator_name = creator_info.get("name", username)
-                creator_image = creator_info.get("image", "")
-                live_url = f"https://www.tiktok.com/@{username}/live"
+
+                creator_name = creator_info.get(
+                    "name",
+                    username
+                )
+
+                creator_image = creator_info.get(
+                    "image",
+                    ""
+                )
+
+                live_url = (
+                    f"https://www.tiktok.com/"
+                    f"@{username}/live"
+                )
 
                 embed = discord.Embed(
-                    title=f"🔴 {creator_name} IS LIVE!",
+                    title=(
+                        f"🔴 {creator_name} IS LIVE!"
+                    ),
                     description=(
-                        f"✨ {creator_name} sedang LIVE di TikTok!\n"
-                        f"Ayo mampir dan ramaikan live-nya!"
+                        f"✨ {creator_name} sedang "
+                        f"LIVE di TikTok!\n"
+                        f"Ayo mampir dan ramaikan "
+                        f"live-nya!"
                     ),
                     url=live_url,
                     color=discord.Color.red()
                 )
 
-                embed.set_footer(text="EVERLIGHT VIRTUAL")
+                embed.set_footer(
+                    text="EVERLIGHT VIRTUAL"
+                )
 
                 if creator_image:
-                    embed.set_image(url=creator_image)
+                    embed.set_image(
+                        url=creator_image
+                    )
 
                 view = discord.ui.View()
 
@@ -222,7 +303,9 @@ async def live_checker():
                     emoji="🔴"
                 )
 
-                view.add_item(watch_button)
+                view.add_item(
+                    watch_button
+                )
 
                 await channel.send(
                     embed=embed,
@@ -232,50 +315,404 @@ async def live_checker():
             live_status[username] = is_live
 
         except Exception as e:
-            print(f"❌ Gagal cek @{username}: {e}")
+
+            print(
+                f"ERROR cek LIVE @{username}: {e}",
+                flush=True
+            )
 
 
-# ==========================================
-# BOT READY + HELLO
-# ==========================================
+# =====================================================
+# TIKTOK TOKEN
+# =====================================================
+
+def load_tiktok_token():
+
+    try:
+
+        with open(
+            "tiktok_token.json",
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return json.load(f)
+
+    except FileNotFoundError:
+
+        return None
+
+    except Exception as e:
+
+        print(
+            f"ERROR membaca TikTok token: {e}",
+            flush=True
+        )
+
+        return None
+
+
+# =====================================================
+# TIKTOK VIDEO API
+# =====================================================
+
+async def get_tiktok_videos():
+
+    token_data = load_tiktok_token()
+
+    if not token_data:
+
+        print(
+            "TikTok belum terhubung. "
+            "Login melalui /tiktok/login",
+            flush=True
+        )
+
+        return None
+
+    access_token = token_data.get(
+        "access_token"
+    )
+
+    if not access_token:
+
+        print(
+            "TikTok access token tidak ditemukan.",
+            flush=True
+        )
+
+        return None
+
+    url = (
+        "https://open.tiktokapis.com/"
+        "v2/video/list/"
+        "?fields=id,title,video_description,"
+        "duration,cover_image_url,"
+        "share_url,create_time"
+    )
+
+    headers = {
+        "Authorization": (
+            f"Bearer {access_token}"
+        ),
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "max_count": 10
+    }
+
+    try:
+
+        async with aiohttp.ClientSession() as session:
+
+            async with session.post(
+                url,
+                headers=headers,
+                json=payload
+            ) as response:
+
+                try:
+                    result = await response.json()
+
+                except Exception:
+
+                    text = await response.text()
+
+                    print(
+                        "TikTok API bukan JSON:",
+                        text,
+                        flush=True
+                    )
+
+                    return None
+
+                if response.status != 200:
+
+                    print(
+                        "TikTok API ERROR:",
+                        result,
+                        flush=True
+                    )
+
+                    return None
+
+                return result
+
+    except Exception as e:
+
+        print(
+            f"ERROR request TikTok API: {e}",
+            flush=True
+        )
+
+        return None
+
+
+async def get_latest_tiktok_video():
+
+    result = await get_tiktok_videos()
+
+    if not result:
+        return None
+
+    videos = (
+        result
+        .get("data", {})
+        .get("videos", [])
+    )
+
+    if not videos:
+        return None
+
+    videos.sort(
+        key=lambda video: video.get(
+            "create_time",
+            0
+        ),
+        reverse=True
+    )
+
+    return videos[0]
+
+
+# =====================================================
+# TIKTOK POST CHECKER
+# =====================================================
+
+last_tiktok_video_id = None
+
+
+async def check_new_tiktok_video():
+
+    global last_tiktok_video_id
+
+    video = await get_latest_tiktok_video()
+
+    if not video:
+        return
+
+    video_id = video.get("id")
+
+    if not video_id:
+        return
+
+    # Pertama kali bot hidup:
+    # simpan video terbaru, jangan kirim notif lama.
+    if last_tiktok_video_id is None:
+
+        last_tiktok_video_id = video_id
+
+        print(
+            f"Video TikTok awal tersimpan: {video_id}",
+            flush=True
+        )
+
+        return
+
+    # Tidak ada video baru.
+    if video_id == last_tiktok_video_id:
+        return
+
+    # Ada video baru.
+    last_tiktok_video_id = video_id
+
+    print(
+        f"VIDEO TIKTOK BARU TERDETEKSI: {video_id}",
+        flush=True
+    )
+
+    share_url = video.get(
+        "share_url"
+    )
+
+    title = (
+        video.get("title")
+        or video.get("video_description")
+        or "Postingan TikTok baru!"
+    )
+
+    cover_image = video.get(
+        "cover_image_url"
+    )
+
+    # Saat ini OAuth terhubung ke akun Kurocat.
+    # Nanti akun lain bisa ditambahkan setelah
+    # masing-masing akun mendapat authorization.
+    username = "kurocatkurimu"
+
+    channel_id = TIKTOK_POST_CHANNELS.get(
+        username
+    )
+
+    channel = bot.get_channel(
+        channel_id
+    )
+
+    if channel is None:
+
+        print(
+            f"ERROR: Channel post @{username} "
+            f"tidak ditemukan.",
+            flush=True
+        )
+
+        return
+
+    creator_name = (
+        TIKTOK_CREATORS
+        .get(username, {})
+        .get("name", username)
+    )
+
+    embed = discord.Embed(
+        title=f"🎬 {creator_name} POSTED!",
+        description=title[:4000],
+        url=share_url,
+        color=discord.Color.from_rgb(
+            254,
+            44,
+            85
+        )
+    )
+
+    if cover_image:
+        embed.set_image(
+            url=cover_image
+        )
+
+    embed.set_footer(
+        text="EVERLIGHT VIRTUAL • TikTok"
+    )
+
+    view = None
+
+    if share_url:
+
+        view = discord.ui.View()
+
+        button = discord.ui.Button(
+            label="Watch on TikTok",
+            style=discord.ButtonStyle.link,
+            url=share_url,
+            emoji="🎵"
+        )
+
+        view.add_item(button)
+
+    await channel.send(
+        embed=embed,
+        view=view
+    )
+
+
+@tasks.loop(minutes=2)
+async def tiktok_video_checker():
+
+    try:
+
+        await check_new_tiktok_video()
+
+    except Exception as e:
+
+        print(
+            f"ERROR TikTok post checker: {e}",
+            flush=True
+        )
+
+
+# =====================================================
+# BOT READY
+# =====================================================
 
 @bot.event
 async def on_ready():
-    print("==============================")
-    print("Everlight Bot ONLINE!")
-    print(f"Login sebagai: {bot.user}")
-    print("==============================")
+
+    print(
+        "==============================",
+        flush=True
+    )
+
+    print(
+        "Everlight Bot ONLINE!",
+        flush=True
+    )
+
+    print(
+        f"Login sebagai: {bot.user}",
+        flush=True
+    )
+
+    print(
+        "==============================",
+        flush=True
+    )
+
+    # Fungsi checker SUDAH didefinisikan di atas,
+    # jadi aman dipanggil dari sini.
 
     if not live_checker.is_running():
+
         live_checker.start()
 
+        print(
+            "TikTok LIVE checker STARTED.",
+            flush=True
+        )
 
-@bot.tree.command(name="hello", description="Say hello to Everlight!")
-async def hello(interaction: discord.Interaction):
+    if not tiktok_video_checker.is_running():
+
+        tiktok_video_checker.start()
+
+        print(
+            "TikTok POST checker STARTED.",
+            flush=True
+        )
+
+
+# =====================================================
+# HELLO COMMAND
+# =====================================================
+
+@bot.tree.command(
+    name="hello",
+    description="Say hello to Everlight!"
+)
+async def hello(
+    interaction: discord.Interaction
+):
+
     await interaction.response.send_message(
-        f"✨ Hello {interaction.user.mention}! Welcome to Everlight!"
+        f"✨ Hello {interaction.user.mention}! "
+        f"Welcome to Everlight!"
     )
 
 
 # =====================================================
-# EVERLIGHT MODERATION SYSTEM
+# MODERATION - WARN
 # =====================================================
 
 @bot.tree.command(
     name="warn",
     description="Berikan warning kepada member"
 )
-@app_commands.checks.has_permissions(moderate_members=True)
+@app_commands.checks.has_permissions(
+    moderate_members=True
+)
 async def warn(
     interaction: discord.Interaction,
     member: discord.Member,
     reason: str
 ):
+
     if member == interaction.user:
+
         await interaction.response.send_message(
-            "❌ Kamu tidak bisa memberikan warning kepada diri sendiri.",
+            "❌ Kamu tidak bisa memberikan "
+            "warning kepada diri sendiri.",
             ephemeral=True
         )
+
         return
 
     cursor.execute(
@@ -293,41 +730,60 @@ async def warn(
     )
 
     db.commit()
+
     warning_id = cursor.lastrowid
 
     try:
+
         await member.send(
-            f"⚠️ **EVERLIGHT VIRTUAL — OFFICIAL WARNING**\n\n"
+            f"⚠️ **EVERLIGHT VIRTUAL — "
+            f"OFFICIAL WARNING**\n\n"
             f"Server: **{interaction.guild.name}**\n"
             f"Warning ID: **#{warning_id}**\n"
             f"Reason: **{reason}**\n"
             f"Moderator: **{interaction.user}**\n\n"
-            f"Harap mengikuti peraturan server untuk menghindari "
-            f"tindakan moderasi selanjutnya."
+            f"Harap mengikuti peraturan server "
+            f"untuk menghindari tindakan "
+            f"moderasi selanjutnya."
         )
-        dm_status = "📨 Warning telah dikirim melalui DM."
+
+        dm_status = (
+            "📨 Warning telah dikirim melalui DM."
+        )
+
     except discord.Forbidden:
-        dm_status = "⚠️ DM member tidak dapat dikirim."
+
+        dm_status = (
+            "⚠️ DM member tidak dapat dikirim."
+        )
 
     await interaction.response.send_message(
         f"⚠️ **MEMBER WARNED**\n\n"
         f"👤 Member: {member.mention}\n"
         f"🆔 Warning ID: **#{warning_id}**\n"
         f"📝 Reason: **{reason}**\n"
-        f"🛡️ Moderator: {interaction.user.mention}\n\n"
+        f"🛡️ Moderator: "
+        f"{interaction.user.mention}\n\n"
         f"{dm_status}"
     )
 
+
+# =====================================================
+# MODERATION - WARNINGS
+# =====================================================
 
 @bot.tree.command(
     name="warnings",
     description="Lihat warning seorang member"
 )
-@app_commands.checks.has_permissions(moderate_members=True)
+@app_commands.checks.has_permissions(
+    moderate_members=True
+)
 async def warnings(
     interaction: discord.Interaction,
     member: discord.Member
 ):
+
     cursor.execute(
         """
         SELECT id, moderator_id, reason, created_at
@@ -344,15 +800,27 @@ async def warnings(
     results = cursor.fetchall()
 
     if not results:
+
         await interaction.response.send_message(
-            f"✅ {member.mention} tidak memiliki warning.",
+            f"✅ {member.mention} "
+            f"tidak memiliki warning.",
             ephemeral=True
         )
+
         return
 
-    text = f"⚠️ **WARNING HISTORY — {member.display_name}**\n\n"
+    text = (
+        f"⚠️ **WARNING HISTORY — "
+        f"{member.display_name}**\n\n"
+    )
 
-    for warning_id, moderator_id, reason, created_at in results:
+    for (
+        warning_id,
+        moderator_id,
+        reason,
+        created_at
+    ) in results:
+
         text += (
             f"**#{warning_id}** — {reason}\n"
             f"Moderator: <@{moderator_id}>\n"
@@ -365,16 +833,25 @@ async def warnings(
     )
 
 
+# =====================================================
+# MODERATION - UNWARN
+# =====================================================
+
 @bot.tree.command(
     name="unwarn",
-    description="Hapus satu warning berdasarkan Warning ID"
+    description=(
+        "Hapus satu warning berdasarkan Warning ID"
+    )
 )
-@app_commands.checks.has_permissions(moderate_members=True)
+@app_commands.checks.has_permissions(
+    moderate_members=True
+)
 async def unwarn(
     interaction: discord.Interaction,
     member: discord.Member,
     warning_id: int
 ):
+
     cursor.execute(
         """
         DELETE FROM warnings
@@ -392,28 +869,38 @@ async def unwarn(
     db.commit()
 
     if cursor.rowcount == 0:
+
         await interaction.response.send_message(
-            f"❌ Warning **#{warning_id}** tidak ditemukan untuk "
+            f"❌ Warning **#{warning_id}** "
+            f"tidak ditemukan untuk "
             f"{member.mention}.",
             ephemeral=True
         )
+
         return
 
     await interaction.response.send_message(
-        f"✅ Warning **#{warning_id}** milik "
-        f"{member.mention} telah dihapus."
+        f"✅ Warning **#{warning_id}** "
+        f"milik {member.mention} telah dihapus."
     )
 
+
+# =====================================================
+# MODERATION - CLEAR WARNINGS
+# =====================================================
 
 @bot.tree.command(
     name="clearwarnings",
     description="Hapus semua warning seorang member"
 )
-@app_commands.checks.has_permissions(moderate_members=True)
+@app_commands.checks.has_permissions(
+    moderate_members=True
+)
 async def clearwarnings(
     interaction: discord.Interaction,
     member: discord.Member
 ):
+
     cursor.execute(
         """
         DELETE FROM warnings
@@ -426,107 +913,149 @@ async def clearwarnings(
     )
 
     deleted = cursor.rowcount
+
     db.commit()
 
     await interaction.response.send_message(
-        f"🧹 Semua warning {member.mention} telah dihapus.\n"
+        f"🧹 Semua warning "
+        f"{member.mention} telah dihapus.\n"
         f"Total warning dihapus: **{deleted}**"
     )
 
+
+# =====================================================
+# MODERATION - KICK
+# =====================================================
 
 @bot.tree.command(
     name="kick",
     description="Kick member dari Everlight"
 )
-@app_commands.checks.has_permissions(kick_members=True)
+@app_commands.checks.has_permissions(
+    kick_members=True
+)
 async def kick(
     interaction: discord.Interaction,
     member: discord.Member,
     reason: str = "Tidak ada alasan"
 ):
+
     if member == interaction.user:
+
         await interaction.response.send_message(
             "❌ Kamu tidak bisa kick diri sendiri.",
             ephemeral=True
         )
+
         return
 
     try:
+
         await member.send(
-            f"👢 **EVERLIGHT VIRTUAL — KICK NOTICE**\n\n"
-            f"Kamu telah dikeluarkan dari **{interaction.guild.name}**.\n"
+            f"👢 **EVERLIGHT VIRTUAL — "
+            f"KICK NOTICE**\n\n"
+            f"Kamu telah dikeluarkan dari "
+            f"**{interaction.guild.name}**.\n"
             f"Reason: **{reason}**\n"
             f"Moderator: **{interaction.user}**"
         )
+
     except discord.Forbidden:
         pass
 
     try:
-        await member.kick(reason=reason)
+
+        await member.kick(
+            reason=reason
+        )
 
         await interaction.response.send_message(
             f"👢 **MEMBER KICKED**\n\n"
             f"👤 Member: **{member}**\n"
             f"📝 Reason: **{reason}**\n"
-            f"🛡️ Moderator: {interaction.user.mention}"
+            f"🛡️ Moderator: "
+            f"{interaction.user.mention}"
         )
+
     except discord.Forbidden:
+
         await interaction.response.send_message(
-            "❌ Bot tidak memiliki permission untuk kick member ini.",
+            "❌ Bot tidak memiliki permission "
+            "untuk kick member ini.",
             ephemeral=True
         )
 
+
+# =====================================================
+# MODERATION - BAN
+# =====================================================
 
 @bot.tree.command(
     name="ban",
     description="Ban member dari Everlight"
 )
-@app_commands.checks.has_permissions(ban_members=True)
+@app_commands.checks.has_permissions(
+    ban_members=True
+)
 async def ban(
     interaction: discord.Interaction,
     member: discord.Member,
     reason: str = "Tidak ada alasan"
 ):
+
     if member == interaction.user:
+
         await interaction.response.send_message(
             "❌ Kamu tidak bisa ban diri sendiri.",
             ephemeral=True
         )
+
         return
 
     try:
+
         await member.send(
-            f"🔨 **EVERLIGHT VIRTUAL — BAN NOTICE**\n\n"
-            f"Kamu telah dibanned secara permanen dari "
-            f"**{interaction.guild.name}**.\n\n"
+            f"🔨 **EVERLIGHT VIRTUAL — "
+            f"BAN NOTICE**\n\n"
+            f"Kamu telah dibanned secara permanen "
+            f"dari **{interaction.guild.name}**.\n\n"
             f"Reason: **{reason}**\n"
             f"Moderator: **{interaction.user}**"
         )
+
     except discord.Forbidden:
         pass
 
     try:
-        await member.ban(reason=reason)
+
+        await member.ban(
+            reason=reason
+        )
 
         await interaction.response.send_message(
             f"🔨 **MEMBER BANNED**\n\n"
             f"👤 Member: **{member}**\n"
             f"📝 Reason: **{reason}**\n"
-            f"🛡️ Moderator: {interaction.user.mention}"
+            f"🛡️ Moderator: "
+            f"{interaction.user.mention}"
         )
+
     except discord.Forbidden:
+
         await interaction.response.send_message(
-            "❌ Bot tidak memiliki permission untuk ban member ini.",
+            "❌ Bot tidak memiliki permission "
+            "untuk ban member ini.",
             ephemeral=True
         )
 
 
-# ==========================================
+# =====================================================
 # MEMBER JOIN / AUTO ROLE
-# ==========================================
+# =====================================================
 
 @bot.event
 async def on_member_join(member):
+
     channel = discord.utils.get(
         member.guild.text_channels,
         name="welcome"
@@ -538,30 +1067,45 @@ async def on_member_join(member):
     )
 
     if role:
+
         try:
+
             await member.add_roles(
                 role,
                 reason="Auto role member baru"
             )
+
         except discord.Forbidden:
-            print("Gagal memberikan role moonwalker.")
+
+            print(
+                "Gagal memberikan role moonwalker.",
+                flush=True
+            )
 
     if channel:
+
         message = (
             f"✨ **A New Star Has Appeared** ✨\n"
-            f"Selamat datang, {member.mention} ✨ Kamu telah memasuki "
-            f"**Everlight Virtual**, tempat di mana kreativitas, "
-            f"persahabatan, dan mimpi bersinar bersama.\n\n"
+            f"Selamat datang, {member.mention} ✨ "
+            f"Kamu telah memasuki "
+            f"**Everlight Virtual**, tempat di mana "
+            f"kreativitas, persahabatan, dan mimpi "
+            f"bersinar bersama.\n\n"
             f"📚 Baca aturan di #welcome\n"
             f"🎭 Pilih role di #self-roles\n"
             f"🌸 Perkenalkan dirimu di #introduction\n"
-            f"💬 Bergabunglah dalam percakapan dan event komunitas\n\n"
-            f"Kami berharap perjalananmu di sini dipenuhi tawa, "
-            f"kenangan indah, dan teman-teman baru.\n"
-            f"🌙 *May your light continue to shine brightly.* ✨"
+            f"💬 Bergabunglah dalam percakapan "
+            f"dan event komunitas\n\n"
+            f"Kami berharap perjalananmu di sini "
+            f"dipenuhi tawa, kenangan indah, "
+            f"dan teman-teman baru.\n"
+            f"🌙 *May your light continue "
+            f"to shine brightly.* ✨"
         )
 
-        banner = await create_welcome_image(member)
+        banner = await create_welcome_image(
+            member
+        )
 
         await channel.send(
             content=message,
@@ -569,37 +1113,62 @@ async def on_member_join(member):
         )
 
 
-# ==================================================
-# SERVER BOOSTER NOTIFICATION
-# ==================================================
+# =====================================================
+# SERVER BOOSTER
+# =====================================================
 
 @bot.event
-async def on_member_update(before, after):
-    if before.premium_since is None and after.premium_since is not None:
+async def on_member_update(
+    before,
+    after
+):
+
+    if (
+        before.premium_since is None
+        and after.premium_since is not None
+    ):
+
         channel = discord.utils.get(
             after.guild.text_channels,
             name="booster"
         )
 
         if channel is None:
-            print("Channel #booster tidak ditemukan.")
+
+            print(
+                "Channel #booster tidak ditemukan.",
+                flush=True
+            )
+
             return
 
         embed = discord.Embed(
             title="💎 EVERLIGHT SERVER BOOST 💎",
             description=(
                 f"✨ Thank you {after.mention}! ✨\n\n"
-                f"You just boosted **{after.guild.name}**!\n\n"
-                f"Your support helps Everlight shine even brighter. 🌙✨\n"
-                f"Thank you for supporting our community!"
+                f"You just boosted "
+                f"**{after.guild.name}**!\n\n"
+                f"Your support helps Everlight "
+                f"shine even brighter. 🌙✨\n"
+                f"Thank you for supporting "
+                f"our community!"
             ),
-            color=discord.Color.from_rgb(255, 105, 180)
+            color=discord.Color.from_rgb(
+                255,
+                105,
+                180
+            )
         )
 
-        embed.set_thumbnail(url=after.display_avatar.url)
+        embed.set_thumbnail(
+            url=after.display_avatar.url
+        )
 
         embed.set_footer(
-            text="Everlight Virtual • Keep Your Light Alive ✨"
+            text=(
+                "Everlight Virtual • "
+                "Keep Your Light Alive ✨"
+            )
         )
 
         await channel.send(
@@ -607,25 +1176,41 @@ async def on_member_update(before, after):
             embed=embed
         )
 
-        print(f"BOOST DETECTED: {after}")
+        print(
+            f"BOOST DETECTED: {after}",
+            flush=True
+        )
 
+
+# =====================================================
+# TEST BOOSTER
+# =====================================================
 
 @bot.tree.command(
     name="testbooster",
-    description="Test Everlight booster notification"
+    description=(
+        "Test Everlight booster notification"
+    )
 )
-@app_commands.checks.has_permissions(administrator=True)
-async def testbooster(interaction: discord.Interaction):
+@app_commands.checks.has_permissions(
+    administrator=True
+)
+async def testbooster(
+    interaction: discord.Interaction
+):
+
     channel = discord.utils.get(
         interaction.guild.text_channels,
         name="booster"
     )
 
     if channel is None:
+
         await interaction.response.send_message(
             "❌ Channel #booster tidak ditemukan.",
             ephemeral=True
         )
+
         return
 
     member = interaction.user
@@ -634,17 +1219,29 @@ async def testbooster(interaction: discord.Interaction):
         title="💎 EVERLIGHT SERVER BOOST 💎",
         description=(
             f"✨ Thank you {member.mention}! ✨\n\n"
-            f"You just boosted **{interaction.guild.name}**!\n\n"
-            f"Your support helps Everlight shine even brighter. 🌙✨\n"
-            f"Thank you for supporting our community!"
+            f"You just boosted "
+            f"**{interaction.guild.name}**!\n\n"
+            f"Your support helps Everlight "
+            f"shine even brighter. 🌙✨\n"
+            f"Thank you for supporting "
+            f"our community!"
         ),
-        color=discord.Color.from_rgb(255, 105, 180)
+        color=discord.Color.from_rgb(
+            255,
+            105,
+            180
+        )
     )
 
-    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_thumbnail(
+        url=member.display_avatar.url
+    )
 
     embed.set_footer(
-        text="Everlight Virtual • Keep Your Light Alive ✨"
+        text=(
+            "Everlight Virtual • "
+            "Keep Your Light Alive ✨"
+        )
     )
 
     await channel.send(
@@ -653,167 +1250,336 @@ async def testbooster(interaction: discord.Interaction):
     )
 
     await interaction.response.send_message(
-        "✅ Booster notification berhasil dites!",
+        "✅ Booster notification "
+        "berhasil dites!",
         ephemeral=True
     )
 
 
-# ==========================================
-# TIKTOK WEB / OAUTH ROUTES
-# ==========================================
+# =====================================================
+# TIKTOK WEBHOOK
+# =====================================================
 
 async def tiktok_webhook(request):
-    try:
-        data = await request.json()
-        print("TikTok Webhook:", data)
-        return web.Response(text="OK", status=200)
-    except Exception as e:
-        print("TikTok Webhook Error:", e)
-        return web.Response(text="OK", status=200)
 
+    try:
+
+        data = await request.json()
+
+        print(
+            "TikTok Webhook:",
+            data,
+            flush=True
+        )
+
+        return web.Response(
+            text="OK",
+            status=200
+        )
+
+    except Exception as e:
+
+        print(
+            "TikTok Webhook Error:",
+            e,
+            flush=True
+        )
+
+        return web.Response(
+            text="OK",
+            status=200
+        )
+
+
+# =====================================================
+# TERMS
+# =====================================================
 
 async def terms_page(request):
+
     html = """
     <html>
-    <head><title>Everlight Bot - Terms of Service</title></head>
+    <head>
+        <title>Everlight Bot - Terms of Service</title>
+    </head>
+
     <body>
+
         <h1>Everlight Bot - Terms of Service</h1>
+
         <p>Last updated: August 13, 2026</p>
 
         <h2>1. About Everlight Bot</h2>
-        <p>Everlight Bot is a Discord community bot operated by Everlight Virtual.
-        It provides community features and TikTok-related notifications.</p>
+
+        <p>
+        Everlight Bot is a Discord community bot
+        operated by Everlight Virtual.
+        It provides community features and
+        TikTok-related notifications.
+        </p>
 
         <h2>2. Use of the Service</h2>
-        <p>Users may use Everlight Bot for its intended community and notification
-        features. Misuse, abuse, or attempts to disrupt the service are prohibited.</p>
+
+        <p>
+        Users may use Everlight Bot for its intended
+        community and notification features.
+        Misuse, abuse, or attempts to disrupt
+        the service are prohibited.
+        </p>
 
         <h2>3. TikTok Integration</h2>
-        <p>Everlight Bot may use TikTok APIs to access authorized TikTok information
-        and public content for notification features.</p>
+
+        <p>
+        Everlight Bot may use TikTok APIs to access
+        authorized TikTok information and public
+        content for notification features.
+        </p>
 
         <h2>4. Availability</h2>
-        <p>The service may be changed, suspended, or discontinued at any time.</p>
+
+        <p>
+        The service may be changed, suspended,
+        or discontinued at any time.
+        </p>
 
         <h2>5. Contact</h2>
-        <p>For questions regarding Everlight Bot, contact Everlight Virtual.</p>
+
+        <p>
+        For questions regarding Everlight Bot,
+        contact Everlight Virtual.
+        </p>
+
     </body>
     </html>
     """
-    return web.Response(text=html, content_type="text/html")
 
+    return web.Response(
+        text=html,
+        content_type="text/html"
+    )
+
+
+# =====================================================
+# PRIVACY
+# =====================================================
 
 async def privacy_page(request):
+
     html = """
     <html>
-    <head><title>Everlight Bot - Privacy Policy</title></head>
+
+    <head>
+        <title>Everlight Bot - Privacy Policy</title>
+    </head>
+
     <body>
+
         <h1>Everlight Bot - Privacy Policy</h1>
+
         <p>Last updated: August 13, 2026</p>
 
         <h2>Information We Process</h2>
-        <p>Everlight Bot may process TikTok account identifiers, basic profile
-        information, and public video information when authorized.</p>
+
+        <p>
+        Everlight Bot may process TikTok account
+        identifiers, basic profile information,
+        and public video information when authorized.
+        </p>
 
         <h2>How Information Is Used</h2>
-        <p>Information is used to provide TikTok content notifications and
-        community features in the Everlight Virtual Discord server.</p>
+
+        <p>
+        Information is used to provide TikTok
+        content notifications and community features
+        in the Everlight Virtual Discord server.
+        </p>
 
         <h2>Data Sharing</h2>
-        <p>Everlight Bot does not sell personal information.</p>
+
+        <p>
+        Everlight Bot does not sell
+        personal information.
+        </p>
 
         <h2>Data Retention</h2>
-        <p>Information is retained only as necessary to operate the service.</p>
+
+        <p>
+        Information is retained only as necessary
+        to operate the service.
+        </p>
 
         <h2>Contact</h2>
-        <p>For privacy questions, contact Everlight Virtual.</p>
+
+        <p>
+        For privacy questions,
+        contact Everlight Virtual.
+        </p>
+
     </body>
+
     </html>
     """
-    return web.Response(text=html, content_type="text/html")
 
+    return web.Response(
+        text=html,
+        content_type="text/html"
+    )
+
+
+# =====================================================
+# TIKTOK VERIFY
+# =====================================================
 
 async def tiktok_verify_file(request):
-    verification = "tiktok-developers-site-verification=7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL"
+
+    verification = (
+        "tiktok-developers-site-verification="
+        "7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL"
+    )
+
     return web.Response(
         body=verification.encode("utf-8"),
-        headers={"Content-Type": "text/plain; charset=utf-8"}
+        headers={
+            "Content-Type":
+            "text/plain; charset=utf-8"
+        }
     )
-
-
-async def tiktok_verify_terms(request):
-    return web.Response(
-        text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA07l",
-        content_type="text/plain"
-    )
-
-
-async def tiktok_verify_privacy(request):
-    return web.Response(
-        text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
-        content_type="text/plain"
-    )
-
-
-async def test_route(request):
-    return web.Response(text="EVERLIGHT TEST OK")
 
 
 async def verify_root_txt(request):
+
     return web.Response(
-        text="tiktok-developers-site-verification=lw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P",
+        text=(
+            "tiktok-developers-site-verification="
+            "lw0KJ6SVO5YSdgbS2vKFqeTW40mKZ25P"
+        ),
         content_type="text/plain"
     )
 
 
 async def verify_terms_txt(request):
+
     return web.Response(
-        text="tiktok-developers-site-verification=4qL77aFCylLLUtAlB6s3QVzGyUKHA071",
+        text=(
+            "tiktok-developers-site-verification="
+            "4qL77aFCylLLUtAlB6s3QVzGyUKHA071"
+        ),
         content_type="text/plain"
     )
 
 
 async def verify_privacy_txt(request):
+
     return web.Response(
-        text="tiktok-developers-site-verification=9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ",
+        text=(
+            "tiktok-developers-site-verification="
+            "9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ"
+        ),
         content_type="text/plain"
     )
 
 
+async def test_route(request):
+
+    return web.Response(
+        text="EVERLIGHT TEST OK"
+    )
+
+
+# =====================================================
+# TIKTOK LOGIN
+# =====================================================
+
 async def tiktok_login(request):
-    client_key = os.getenv("TIKTOK_CLIENT_KEY")
-    redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
+
+    client_key = os.getenv(
+        "TIKTOK_CLIENT_KEY"
+    )
+
+    if not client_key:
+
+        return web.Response(
+            text="TIKTOK_CLIENT_KEY belum diatur.",
+            status=500
+        )
+
+    redirect_uri = (
+        "https://everlight-world-production."
+        "up.railway.app/tiktok/callback"
+    )
 
     params = {
         "client_key": client_key,
-        "scope": "user.info.basic,video.list",
+        "scope": (
+            "user.info.basic,video.list"
+        ),
         "response_type": "code",
         "redirect_uri": redirect_uri,
         "state": "everlight"
     }
 
     login_url = (
-        "https://www.tiktok.com/v2/auth/authorize/?"
+        "https://www.tiktok.com/"
+        "v2/auth/authorize/?"
         + urllib.parse.urlencode(params)
     )
 
-    raise web.HTTPFound(login_url)
+    raise web.HTTPFound(
+        login_url
+    )
 
+
+# =====================================================
+# TIKTOK CALLBACK
+# =====================================================
 
 async def tiktok_callback(request):
+
     code = request.query.get("code")
     error = request.query.get("error")
 
     if error:
-        return web.Response(text=f"TikTok Login Error: {error}")
+
+        return web.Response(
+            text=f"TikTok Login Error: {error}"
+        )
 
     if not code:
-        return web.Response(text="Authorization code tidak ditemukan.")
 
-    client_key = os.getenv("TIKTOK_CLIENT_KEY")
-    client_secret = os.getenv("TIKTOK_CLIENT_SECRET")
-    redirect_uri = "https://everlight-world-production.up.railway.app/tiktok/callback"
-    token_url = "https://open.tiktokapis.com/v2/oauth/token/"
+        return web.Response(
+            text=(
+                "Authorization code "
+                "tidak ditemukan."
+            )
+        )
+
+    client_key = os.getenv(
+        "TIKTOK_CLIENT_KEY"
+    )
+
+    client_secret = os.getenv(
+        "TIKTOK_CLIENT_SECRET"
+    )
+
+    if not client_key or not client_secret:
+
+        return web.Response(
+            text=(
+                "TikTok client key/secret "
+                "belum diatur."
+            ),
+            status=500
+        )
+
+    redirect_uri = (
+        "https://everlight-world-production."
+        "up.railway.app/tiktok/callback"
+    )
+
+    token_url = (
+        "https://open.tiktokapis.com/"
+        "v2/oauth/token/"
+    )
 
     data = {
         "client_key": client_key,
@@ -824,103 +1590,275 @@ async def tiktok_callback(request):
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(token_url, data=data) as response:
-            result = await response.json()
+
+        async with session.post(
+            token_url,
+            data=data
+        ) as response:
+
+            try:
+
+                result = await response.json()
+
+            except Exception:
+
+                text = await response.text()
+
+                return web.Response(
+                    text=(
+                        "TikTok token response "
+                        f"bukan JSON: {text}"
+                    ),
+                    status=500
+                )
 
     if "access_token" not in result:
+
         return web.Response(
-            text=f"Gagal mendapatkan TikTok access token: {result}"
+            text=(
+                "Gagal mendapatkan TikTok "
+                f"access token: {result}"
+            )
         )
 
-    access_token = result["access_token"]
-    refresh_token = result.get("refresh_token")
-    open_id = result.get("open_id")
-
     token_data = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "open_id": open_id
+        "access_token":
+            result["access_token"],
+
+        "refresh_token":
+            result.get("refresh_token"),
+
+        "open_id":
+            result.get("open_id")
     }
 
-    with open("tiktok_token.json", "w", encoding="utf-8") as f:
-        json.dump(token_data, f)
+    with open(
+        "tiktok_token.json",
+        "w",
+        encoding="utf-8"
+    ) as f:
 
-    print("TikTok authorization berhasil!")
-    print(f"TikTok Open ID: {open_id}")
+        json.dump(
+            token_data,
+            f
+        )
+
+    print(
+        "TikTok authorization berhasil!",
+        flush=True
+    )
+
+    print(
+        f"TikTok Open ID: "
+        f"{result.get('open_id')}",
+        flush=True
+    )
 
     return web.Response(
-        text="TikTok berhasil terhubung ke Everlight Bot!"
+        text=(
+            "TikTok berhasil terhubung "
+            "ke Everlight Bot!"
+        )
     )
 
 
+# =====================================================
+# TIKTOK VIDEOS PAGE
+# =====================================================
+
+async def tiktok_videos(request):
+
+    result = await get_tiktok_videos()
+
+    if not result:
+
+        return web.json_response(
+            {
+                "status": "error",
+                "message": (
+                    "TikTok belum terhubung "
+                    "atau API gagal."
+                )
+            },
+            status=400
+        )
+
+    videos = (
+        result
+        .get("data", {})
+        .get("videos", [])
+    )
+
+    return web.json_response(
+        {
+            "status": "success",
+            "video_count": len(videos),
+            "videos": videos
+        }
+    )
+
+
+# =====================================================
+# HOME PAGE
+# =====================================================
+
 async def home_page(request):
+
     html = """
     <!DOCTYPE html>
+
     <html>
+
     <head>
         <title>Everlight World</title>
     </head>
+
     <body>
+
         <h1>Everlight World</h1>
-        <p>Connect your TikTok account with Everlight Bot.</p>
+
+        <p>
+        Connect your TikTok account
+        with Everlight Bot.
+        </p>
+
         <a href="/tiktok/login">
-            <button>Login with TikTok</button>
+            <button>
+                Login with TikTok
+            </button>
         </a>
+
+        <br><br>
+
+        <a href="/tiktok/videos">
+            View TikTok Videos
+        </a>
+
     </body>
+
     </html>
     """
-    return web.Response(text=html, content_type="text/html")
 
+    return web.Response(
+        text=html,
+        content_type="text/html"
+    )
+
+
+# =====================================================
+# WEB SERVER
+# =====================================================
 
 async def start_web_server():
+
     app = web.Application()
 
-    app.router.add_get("/test", test_route)
-    app.router.add_get("/", home_page)
-    app.router.add_get("/tiktok/login", tiktok_login)
-    app.router.add_get("/cek-tiktok", verify_root_txt)
+    app.router.add_get(
+        "/",
+        home_page
+    )
+
+    app.router.add_get(
+        "/test",
+        test_route
+    )
+
+    app.router.add_get(
+        "/tiktok/login",
+        tiktok_login
+    )
+
+    app.router.add_get(
+        "/tiktok/callback",
+        tiktok_callback
+    )
+
+    app.router.add_get(
+        "/tiktok/videos",
+        tiktok_videos
+    )
+
+    app.router.add_get(
+        "/cek-tiktok",
+        verify_root_txt
+    )
 
     app.router.add_get(
         "/{filename}.txt",
         verify_root_txt
     )
 
-    app.router.add_get("/tiktok/callback", tiktok_callback)
-
     app.router.add_get(
-        "/terms/tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
+        "/terms/"
+        "tiktok4qL77aFCylLLUtAlB6s3QVzGyUKHA071.txt",
         verify_terms_txt
     )
 
     app.router.add_get(
-        "/privacy/tiktok9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ.txt",
+        "/privacy/"
+        "tiktok9AMaLRt3zKWPyXzfmiIEGnYrfXMS5WFJ.txt",
         verify_privacy_txt
     )
 
-    app.router.add_post("/tiktok/webhook", tiktok_webhook)
-    app.router.add_get("/terms", terms_page)
-    app.router.add_get("/privacy", privacy_page)
+    app.router.add_post(
+        "/tiktok/webhook",
+        tiktok_webhook
+    )
 
     app.router.add_get(
-        "/tiktok7caxFt77pT4f9XdUEIWEeJIBBRo2HXUL.txt",
+        "/terms",
+        terms_page
+    )
+
+    app.router.add_get(
+        "/privacy",
+        privacy_page
+    )
+
+    app.router.add_get(
+        "/tiktok7caxFt77pT4f9XdUEIWEeJlBBRo2HXUL.txt",
         tiktok_verify_file
     )
 
-    runner = web.AppRunner(app)
+    runner = web.AppRunner(
+        app
+    )
+
     await runner.setup()
 
-    port = int(os.getenv("PORT", 8080))
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    port = int(
+        os.getenv(
+            "PORT",
+            8080
+        )
+    )
+
+    site = web.TCPSite(
+        runner,
+        "0.0.0.0",
+        port
+    )
+
     await site.start()
 
-    print(f"TikTok Webhook server berjalan di port {port}")
+    print(
+        f"Web server berjalan di port {port}",
+        flush=True
+    )
+
+    return runner
 
 
-# ==========================================
+# =====================================================
 # START BOT
-# ==========================================
+# =====================================================
 
 if not TOKEN:
-    raise RuntimeError("DISCORD_TOKEN belum diisi di environment")
+
+    raise RuntimeError(
+        "DISCORD_TOKEN belum diisi "
+        "di environment"
+    )
+
 
 bot.run(TOKEN)
