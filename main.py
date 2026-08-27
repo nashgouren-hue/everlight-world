@@ -726,8 +726,8 @@ async def get_latest_youtube_video(channel_id):
 
         return None
 
-    @tasks.loop(minutes=2)
-    async def youtube_upload_checker():
+ @tasks.loop(minutes=2)
+ async def youtube_upload_checker():
 
         for username, creator in YOUTUBE_CHANNELS.items():
 
