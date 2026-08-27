@@ -18,6 +18,18 @@ from aiohttp import web
 # =====================================================
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+YOUTUBE_CHANNELS = {
+    "kurocat": {
+        "name": "Kurocat Kurimu",
+        "channel_id": "UChOFqp5RjGTt8FZZFvmxtsg"
+    }
+}
+
+# Channel notifikai Youtube
+YOUTUBE_LIVE_CHANNEL_ID = 1513414157897043998
+YOUTUBE_POST_CHANNEL_ID = 1513404982471164034
 
 # Channel notifikasi LIVE TikTok
 LIVE_CHANNEL_ID = 1513414157897043998
@@ -653,6 +665,177 @@ async def tiktok_video_checker():
             flush=True
         )
 
+# =====================================================
+# YOUTUBE UPLOAD CHECKER
+# =====================================================
+
+youtube_last_video = {}
+
+
+async def get_latest_youtube_video(channel_id):
+
+    if not YOUTUBE_API_KEY:
+        print(
+            "ERROR: YOUTUBE_API_KEY belum tersedia.",
+            flush=True
+        )
+        return None
+
+    url = "https://www.googleapis.com/youtube/v3/search"
+
+    params = {
+        "key": YOUTUBE_API_KEY,
+        "channelId": channel_id,
+        "part": "snippet",
+        "order": "date",
+        "maxResult": 1,
+        "type": "video"
+    }
+
+    try:
+
+        async with aiohttp.ClientSession() as session:
+
+            async with session.get(
+                url,
+                params=params
+            ) as response:
+
+                result = await response.json()
+
+                if response.status != 200:
+                    print(
+                        "YOUTUBE API ERROR:",
+                        result,
+                        flush=True
+                    )
+                    return None
+
+                items = result.get("items", [])
+
+                if not items:
+                    return None
+
+                return items[0]
+
+    except Exception as e:
+        print(
+            f"ERROR request YouTube API: {e}",
+            flush=True 
+        )
+
+        return None
+
+    @tasks.loop(minutes=2)
+    async def youtube_upload_checker():
+
+        for username, creator in YOUTUBE_CHANNELS.items():
+
+            try:
+
+                video = await get_latest_youtube_video(
+                    creator["channel_id"]
+                )
+
+                if not video:
+                    continue
+
+                video_id = (
+                    video.get("id", {})
+                )
+
+                if not video_id:
+                    continue
+
+                # saat bot pertama hidup:
+                # simpan video terbaru tanpa mengirim notif lama.
+                if username not in youtube_last_video:
+
+                    youtube_last_video[username] = video_id
+
+                    print(
+                        f"YouTube awal@{username}: {video_id}",
+                        flush=True
+                    )
+
+                    continue
+
+                # Belum ada upload baru.
+                if youtube_last_video[username] == video_id:
+                    continue
+
+                youtube_last_video[username] = video_id
+
+                snippet = video.get("snippet", {})
+
+                tittle = snippet.get(
+                    "tittle",
+                    "Video YouTube nbaru!"
+                )
+
+                thumbnail = (
+                    snippet.get("thumbnails", {})
+                    .get("high", {})
+                    .get("url")
+                )
+
+                video_url = (
+                    f"https://www.youtube.com/watch?v={video_id}"
+                )
+
+                channel = bot.get_channel(
+                    YOUTUBE_POST_CHANNEL_ID
+                )
+
+                if channel is None:
+                    print(
+                        "ERROR Channel YouTube POST Discord tidak ditemukan.",
+                        flush=True
+                    )
+                    continue
+
+                enbed = discord.Embed(
+                    tittle=f"🎬 {creator['name']} UPLOADED!",
+                    description=tittle,
+                    url=video_url,
+                    color=discord.color.red()
+                )
+
+                if thumbnail:
+                    embed.set_image(url=thumbnail)
+
+                embed.set_footer(
+                    text="EVERLIGHT VIRTUAL • YouTube"
+                )
+
+                view = discord.ui.view()
+
+                button = discord.ui.Button(
+                    label="watch on YouTube",
+                    style=discord.ButtonStyle.link,
+                    url=video_url,
+                    emoji="▶"
+                )
+
+                view.add_item(button)
+
+                await channel.send(
+                    embed=embed,
+                    view=view
+                )
+
+                print(
+                    f"YOUTUBE UPLOAD: {creator['name']} | {tittle}",
+                    flush=True
+                )
+
+            except Exception as e:
+
+                print(
+                    f"ERROR YouTube @{username}: {e}",
+                    flush=True
+                )
+
 
 # =====================================================
 # BOT READY
@@ -699,6 +882,15 @@ async def on_ready():
 
         print(
             "TikTok POST checker STARTED.",
+            flush=True
+        )
+
+    if not youtube_upload_checker.is_running():
+
+        youtube_upload_checker.start()
+
+        print(
+            "YouTube UPLOAD checker STARTED.",
             flush=True
         )
 
