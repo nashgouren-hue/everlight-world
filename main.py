@@ -673,7 +673,6 @@ youtube_last_video = {}
 
 
 async def get_latest_youtube_video(channel_id):
-
     if not YOUTUBE_API_KEY:
         print(
             "ERROR: YOUTUBE_API_KEY belum tersedia.",
@@ -681,31 +680,71 @@ async def get_latest_youtube_video(channel_id):
         )
         return None
 
-    url = "https://www.googleapis.com/youtube/v3/search"
-
-    params = {
-        "key": YOUTUBE_API_KEY,
-        "channelId": channel_id,
-        "part": "snippet",
-        "order": "date",
-        "maxResult": 1,
-        "type": "video"
-    }
-
     try:
-
         async with aiohttp.ClientSession() as session:
 
+            # 1. Ambil uploads playlist milik channel
+            channel_url = "https://www.googleapis.com/youtube/v3/channels"
+
+            channel_params = {
+                "key": YOUTUBE_API_KEY,
+                "id": channel_id,
+                "part": "contentDetails"
+            }
+
             async with session.get(
-                url,
-                params=params
+                channel_url,
+                params=channel_params
+            ) as response:
+
+                channel_result = await response.json()
+
+                if response.status != 200:
+                    print(
+                        "YOUTUBE CHANNEL API ERROR:",
+                        channel_result,
+                        flush=True
+                    )
+                    return None
+
+                channel_items = channel_result.get("items", [])
+
+                if not channel_items:
+                    print(
+                        f"YOUTUBE DEBUG: channel {channel_id} tidak ditemukan.",
+                        flush=True
+                    )
+                    return None
+
+                uploads_playlist = (
+                    channel_items[0]
+                    ["contentDetails"]
+                    ["relatedPlaylists"]
+                    ["uploads"]
+                )
+
+            # 2. Ambil video terbaru dari uploads playlist
+            playlist_url = (
+                "https://www.googleapis.com/youtube/v3/playlistItems"
+            )
+
+            playlist_params = {
+                "key": YOUTUBE_API_KEY,
+                "playlistId": uploads_playlist,
+                "part": "snippet",
+                "maxResults": 1
+            }
+
+            async with session.get(
+                playlist_url,
+                params=playlist_params
             ) as response:
 
                 result = await response.json()
 
                 if response.status != 200:
                     print(
-                        "YOUTUBE API ERROR:",
+                        "YOUTUBE PLAYLIST API ERROR:",
                         result,
                         flush=True
                     )
@@ -714,28 +753,41 @@ async def get_latest_youtube_video(channel_id):
                 items = result.get("items", [])
 
                 print(
-                    f"YOUTUBE DEBUG channel={channel_id}"
-                    f"status={response.status} items{len(items)}",
+                    f"YOUTUBE DEBUG channel={channel_id} "
+                    f"status={response.status} items={len(items)}",
                     flush=True
                 )
 
                 if not items:
-                    print(
-                        f"YOUTUBE DEBUG: tidak ada video untuk channel {channel_id}",
-                        flush=True
-                    )
                     return None
 
-                return items[0]
-            
+                item = items[0]
+
+                # Dibentuk seperti hasil fungsi lama
+                # supaya checker di bawah tidak perlu diubah.
+                video_id = (
+                    item.get("snippet", {})
+                    .get("resourceId", {})
+                    .get("videoId")
+                )
+
+                if not video_id:
+                    return None
+
+                return {
+                    "id": {
+                        "videoId": video_id
+                    },
+                    "snippet": item.get("snippet", {})
+                }
+
     except Exception as e:
         print(
             f"ERROR request YouTube API: {e}",
-            flush=True 
+            flush=True
         )
-
         return None
-
+    
 @tasks.loop(minutes=2)
 async def youtube_upload_checker():
 
