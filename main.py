@@ -723,6 +723,11 @@ async def get_latest_youtube_video(channel_id):
                     ["uploads"]
                 )
 
+                print(
+                    f"YOUTUBE UPLOADS PLAYLIST ID: {uploads_playlist}",
+                    flush=True
+                )
+
             # 2. Ambil video terbaru dari uploads playlist
             playlist_url = (
                 "https://www.googleapis.com/youtube/v3/playlistItems"
