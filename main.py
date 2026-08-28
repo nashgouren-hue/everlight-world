@@ -713,11 +713,21 @@ async def get_latest_youtube_video(channel_id):
 
                 items = result.get("items", [])
 
+                print(
+                    f"YOUTUBE DEBUG channel={channel_id}"
+                    f"status={response.status} items{len(items)}",
+                    flush=True
+                )
+
                 if not items:
+                    print(
+                        f"YOUTUBE DEBUG: tidak ada video untuk channel {channel_id}",
+                        flush=True
+                    )
                     return None
 
                 return items[0]
-
+            
     except Exception as e:
         print(
             f"ERROR request YouTube API: {e}",
