@@ -1056,6 +1056,71 @@ async def youtube_upload_checker():
                     flush=True
                 )
 
+@tasks.loop(minutes=5)
+async def tiktok_follower_milestone_checker():
+
+    for username, data in TIKTOK_FOLLOWER_MILESTONES.items():
+
+        try:
+            followers = await get_tiktok_follower_count(username)
+
+            if followers is None:
+                continue
+
+            # Cari milestone 500 terdekat yang SUDAH tercapai
+            current_milestone = (
+                followers // FOLLOWER_MILESTONE_STEP
+            ) * FOLLOWER_MILESTONE_STEP
+
+            # Pertama kali bot membaca follower:
+            # simpan posisi sekarang tanpa kirim pengumuman lama
+            if data["last_milestone"] == 0:
+                data["last_milestone"] = current_milestone
+
+                print(
+                    f"MILESTONE INIT @{username}: "
+                    f"{current_milestone} | followers={followers}",
+                    flush=True
+                )
+
+                continue
+
+            # Belum mencapai milestone berikutnya
+            if current_milestone <= data["last_milestone"]:
+                continue
+
+            # Ada milestone baru
+            data["last_milestone"] = current_milestone
+
+            channel = bot.get_channel(
+                TIKTOK_FOLLOWER_MILESTONE_CHANNEL_ID
+            )
+
+            if channel is None:
+                print(
+                    "ERROR: Channel milestone TikTok tidak ditemukan.",
+                    flush=True
+                )
+                continue
+
+            message = data["message"].format(
+                name=data["name"],
+                followers=current_milestone
+            )
+
+            await channel.send(message)
+
+            print(
+                f"MILESTONE SENT @{username}: "
+                f"{current_milestone}",
+                flush=True
+            )
+
+        except Exception as e:
+            print(
+                f"ERROR milestone @{username}: {e}",
+                flush=True
+            )
 
 # =====================================================
 # BOT READY
@@ -1083,14 +1148,8 @@ async def on_ready():
         "==============================",
         flush=True
     )
-
-    followers_test = await get_tiktok_follower_count("kurocatkurimu")
-
-    print(
-        f"TEST FOLLOWER KUROCAT = {followers_test}",
-        flush=True
-    )
     
+
     # Fungsi checker SUDAH didefinisikan di atas,
     # jadi aman dipanggil dari sini.
 
@@ -1120,6 +1179,15 @@ async def on_ready():
             "YouTube UPLOAD checker STARTED.",
             flush=True
         )
+
+    if not tiktok_follower_milestone_checker.is_running():
+
+        tiktok_follower_milestone_checker.start()
+
+        print(
+            "TikTok FOLLOWER MILESTONE checker STARTED.",
+              flush=True
+              )
 
 
 # =====================================================
