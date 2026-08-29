@@ -37,60 +37,65 @@ FOLLOWER_MILESTONE_STEP = 500
 TIKTOK_FOLLOWER_MILESTONES = {
     "kurocatkurimu": {
         "name": "Kurocat Kurimu",
+        "channel_id": 1513404982471164034,
         "last_milestone": 0,
         "message": (
             "🎉 CONGRATULATIONS! 🎉\n\n"
             "Selamat kepada **{name}** yang telah mencapai "
             "**{followers:,} FOLLOWERS**! ✨\n\n"
-            "Terima kasih atas semua dukungannya!\n\n"
+            "Terima kasih atas semua dukungannya!\n"
             "— EVERLIGHT VIRTUAL"
         )
     },
 
     "nashgouren_": {
         "name": "Nash Gouren",
+        "channel_id": 1513405816714170408,
         "last_milestone": 0,
         "message": (
             "🎉 CONGRATULATIONS! 🎉\n\n"
             "Selamat kepada **{name}** yang telah mencapai "
             "**{followers:,} FOLLOWERS**! ✨\n\n"
-            "Terima kasih atas semua dukungannya!\n\n"
+            "Terima kasih atas semua dukungannya!\n"
             "— EVERLIGHT VIRTUAL"
         )
     },
 
     "hiharuhere": {
         "name": "Ikkito Haru",
+        "channel_id": 1516754539166957568,
         "last_milestone": 0,
         "message": (
             "🎉 CONGRATULATIONS! 🎉\n\n"
             "Selamat kepada **{name}** yang telah mencapai "
             "**{followers:,} FOLLOWERS**! ✨\n\n"
-            "Terima kasih atas semua dukungannya!\n\n"
+            "Terima kasih atas semua dukungannya!\n"
             "— EVERLIGHT VIRTUAL"
         )
     },
 
     "louiegospellvt": {
         "name": "Louise Gospell",
+        "channel_id": 1516756829412134942,
         "last_milestone": 0,
         "message": (
             "🎉 CONGRATULATIONS! 🎉\n\n"
             "Selamat kepada **{name}** yang telah mencapai "
             "**{followers:,} FOLLOWERS**! ✨\n\n"
-            "Terima kasih atas semua dukungannya!\n\n"
+            "Terima kasih atas semua dukungannya!\n"
             "— EVERLIGHT VIRTUAL"
         )
     },
 
     "everlightvirtual": {
         "name": "Everlight Virtual",
+        "channel_id": 1514097716995821638,
         "last_milestone": 0,
         "message": (
             "🎉 CONGRATULATIONS! 🎉\n\n"
             "Selamat kepada **{name}** yang telah mencapai "
             "**{followers:,} FOLLOWERS**! ✨\n\n"
-            "Terima kasih atas semua dukungannya!\n\n"
+            "Terima kasih atas semua dukungannya!\n"
             "— EVERLIGHT VIRTUAL"
         )
     }
@@ -1125,6 +1130,44 @@ async def tiktok_follower_milestone_checker():
 # =====================================================
 # BOT READY
 # =====================================================
+
+@bot.tree.command(
+    name="testmilestone",
+    description="Test TikTok follower milestone notification"
+)
+async def testmilestone(interaction: discord.Interaction):
+
+    data = TIKTOK_FOLLOWER_MILESTONES["kurocatkurimu"]
+
+    test_followers = 9000
+
+    message = data["message"].format(
+        name=data["name"],
+        followers=test_followers
+    )
+
+    channel = bot.get_channel(
+        data["channel_id"]
+    )
+
+    if channel is None:
+        await interaction.response.send_message(
+            "❌ Channel milestone tidak ditemukan.",
+            ephemeral=True
+        )
+        return
+
+    await channel.send(
+        f"@everyone\n\n{message}",
+        allowed_mentions=discord.AllowedMentions(
+            everyone=True
+        )
+    )
+
+    await interaction.response.send_message(
+        "✅ Test milestone 9,000 followers berhasil dikirim.",
+        ephemeral=True
+    )
 
 @bot.event
 async def on_ready():
