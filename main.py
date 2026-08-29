@@ -1,6 +1,7 @@
 import os
 import json
 import urllib.parse
+import xml.etree.ElementTree as ET
 import discord
 import aiohttp
 import io
@@ -673,122 +674,78 @@ youtube_last_video = {}
 
 
 async def get_latest_youtube_video(channel_id):
-    if not YOUTUBE_API_KEY:
+    try:
+        feed_url = (
+            "https://www.youtube.com/feeds/videos.xml"
+            f"?channel_id={channel_id}"
+        )
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(feed_url) as response:
+
+                if response.status != 200:
+                    print(
+                        f"YOUTUBE RSS ERROR: status={response.status}",
+                        flush=True
+                    )
+                    return None
+
+                xml_text = await response.text()
+
+        root = ET.fromstring(xml_text)
+
+        namespaces = {
+            "atom": "http://www.w3.org/2005/Atom",
+            "yt": "http://www.youtube.com/xml/schemas/2015"
+        }
+
+        entry = root.find("atom:entry", namespaces)
+
+        if entry is None:
+            print(
+                f"YOUTUBE RSS: tidak ada video untuk {channel_id}",
+                flush=True
+            )
+            return None
+
+        video_id_element = entry.find("yt:videoId", namespaces)
+        title_element = entry.find("atom:title", namespaces)
+
+        if video_id_element is None:
+            print(
+                "YOUTUBE RSS: videoId tidak ditemukan.",
+                flush=True
+            )
+            return None
+
+        video_id = video_id_element.text
+
+        title = (
+            title_element.text
+            if title_element is not None
+            else "Video Baru"
+        )
+
         print(
-            "ERROR: YOUTUBE_API_KEY belum tersedia.",
+            f"YOUTUBE RSS OK | channel={channel_id} "
+            f"| video={video_id} | title={title}",
             flush=True
         )
-        return None
 
-    try:
-        async with aiohttp.ClientSession() as session:
-
-            # 1. Ambil uploads playlist milik channel
-            channel_url = "https://www.googleapis.com/youtube/v3/channels"
-
-            channel_params = {
-                "key": YOUTUBE_API_KEY,
-                "id": channel_id,
-                "part": "contentDetails"
+        # Format dibuat sama seperti fungsi sebelumnya
+        # supaya youtube_upload_checker tetap kompatibel.
+        return {
+            "id": {
+                "videoId": video_id
+            },
+            "snippet": {
+                "title": title
             }
-
-            async with session.get(
-                channel_url,
-                params=channel_params
-            ) as response:
-
-                channel_result = await response.json()
-
-                if response.status != 200:
-                    print(
-                        "YOUTUBE CHANNEL API ERROR:",
-                        channel_result,
-                        flush=True
-                    )
-                    return None
-
-                channel_items = channel_result.get("items", [])
-
-                if not channel_items:
-                    print(
-                        f"YOUTUBE DEBUG: channel {channel_id} tidak ditemukan.",
-                        flush=True
-                    )
-                    return None
-
-                uploads_playlist = (
-                    channel_items[0]
-                    ["contentDetails"]
-                    ["relatedPlaylists"]
-                    ["uploads"]
-                )
-
-                print(
-                    f"YOUTUBE UPLOADS PLAYLIST ID: {uploads_playlist}",
-                    flush=True
-                )
-
-            # 2. Ambil video terbaru dari uploads playlist
-            playlist_url = (
-                "https://www.googleapis.com/youtube/v3/playlistItems"
-            )
-
-            playlist_params = {
-                "key": YOUTUBE_API_KEY,
-                "playlistId": uploads_playlist,
-                "part": "snippet",
-                "maxResults": 1
-            }
-
-            async with session.get(
-                playlist_url,
-                params=playlist_params
-            ) as response:
-
-                result = await response.json()
-
-                if response.status != 200:
-                    print(
-                        "YOUTUBE PLAYLIST API ERROR:",
-                        result,
-                        flush=True
-                    )
-                    return None
-
-                items = result.get("items", [])
-
-                print(
-                    f"YOUTUBE DEBUG channel={channel_id} "
-                    f"status={response.status} items={len(items)}",
-                    flush=True
-                )
-
-                if not items:
-                    return None
-
-                item = items[0]
-
-                # Dibentuk seperti hasil fungsi lama
-                # supaya checker di bawah tidak perlu diubah.
-                video_id = (
-                    item.get("snippet", {})
-                    .get("resourceId", {})
-                    .get("videoId")
-                )
-
-                if not video_id:
-                    return None
-
-                return {
-                    "id": {
-                        "videoId": video_id
-                    },
-                    "snippet": item.get("snippet", {})
-                }
+        }
 
     except Exception as e:
         print(
-            f"ERROR request YouTube API: {e}",
+            f"YOUTUBE RSS ERROR: {e}",
             flush=True
         )
         return None
@@ -807,9 +764,7 @@ async def youtube_upload_checker():
                 if not video:
                     continue
 
-                video_id = (
-                    video.get("id", {})
-                )
+                video_id = video.get("id")
 
                 if not video_id:
                     continue
