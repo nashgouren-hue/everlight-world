@@ -28,6 +28,154 @@ YOUTUBE_CHANNELS = {
     }
 }
 
+# =========================================================
+# TIKTOK FOLLOWER MILESTONE
+# =========================================================
+
+FOLLOWER_MILESTONE_STEP = 500
+
+TIKTOK_FOLLOWER_MILESTONES = {
+    "kurocatkurimu": {
+        "name": "Kurocat Kurimu",
+        "last_milestone": 0,
+        "message": (
+            "🎉 CONGRATULATIONS! 🎉\n\n"
+            "Selamat kepada **{name}** yang telah mencapai "
+            "**{followers:,} FOLLOWERS**! ✨\n\n"
+            "Terima kasih atas semua dukungannya!\n\n"
+            "— EVERLIGHT VIRTUAL"
+        )
+    },
+
+    "nashgouren_": {
+        "name": "Nash Gouren",
+        "last_milestone": 0,
+        "message": (
+            "🎉 CONGRATULATIONS! 🎉\n\n"
+            "Selamat kepada **{name}** yang telah mencapai "
+            "**{followers:,} FOLLOWERS**! ✨\n\n"
+            "Terima kasih atas semua dukungannya!\n\n"
+            "— EVERLIGHT VIRTUAL"
+        )
+    },
+
+    "hiharuhere": {
+        "name": "Ikkito Haru",
+        "last_milestone": 0,
+        "message": (
+            "🎉 CONGRATULATIONS! 🎉\n\n"
+            "Selamat kepada **{name}** yang telah mencapai "
+            "**{followers:,} FOLLOWERS**! ✨\n\n"
+            "Terima kasih atas semua dukungannya!\n\n"
+            "— EVERLIGHT VIRTUAL"
+        )
+    },
+
+    "louiegospellvt": {
+        "name": "Louise Gospell",
+        "last_milestone": 0,
+        "message": (
+            "🎉 CONGRATULATIONS! 🎉\n\n"
+            "Selamat kepada **{name}** yang telah mencapai "
+            "**{followers:,} FOLLOWERS**! ✨\n\n"
+            "Terima kasih atas semua dukungannya!\n\n"
+            "— EVERLIGHT VIRTUAL"
+        )
+    },
+
+    "everlightvirtual": {
+        "name": "Everlight Virtual",
+        "last_milestone": 0,
+        "message": (
+            "🎉 CONGRATULATIONS! 🎉\n\n"
+            "Selamat kepada **{name}** yang telah mencapai "
+            "**{followers:,} FOLLOWERS**! ✨\n\n"
+            "Terima kasih atas semua dukungannya!\n\n"
+            "— EVERLIGHT VIRTUAL"
+        )
+    }
+}
+
+FOLLOWER_MILESTONE_FILE = "follower_milestones.json"
+
+
+def load_follower_milestones():
+    try:
+        with open(FOLLOWER_MILESTONE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_follower_milestones(data):
+    try:
+        with open(FOLLOWER_MILESTONE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        print(
+            f"ERROR save follower milestone: {e}",
+            flush=True
+        )
+
+
+follower_milestone_data = load_follower_milestones()
+
+async def get_tiktok_follower_count(username):
+    url = f"https://www.tiktok.com/@{username}"
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+
+    try:
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(url) as response:
+
+                if response.status != 200:
+                    print(
+                        f"TIKTOK FOLLOWER ERROR @{username}: "
+                        f"HTTP {response.status}",
+                        flush=True
+                    )
+                    return None
+
+                html = await response.text()
+
+                import re
+
+                match = re.search(
+                    r'"followerCount":(\d+)',
+                    html
+                )
+
+                if not match:
+                    print(
+                        f"TIKTOK FOLLOWER: followerCount "
+                        f"tidak ditemukan @{username}",
+                        flush=True
+                    )
+                    return None
+
+                followers = int(match.group(1))
+
+                print(
+                    f"TIKTOK FOLLOWER @{username}: {followers}",
+                    flush=True
+                )
+
+                return followers
+
+    except Exception as e:
+        print(
+            f"TIKTOK FOLLOWER ERROR @{username}: {e}",
+            flush=True
+        )
+        return None
+
 # Channel notifikai Youtube
 YOUTUBE_LIVE_CHANNEL_ID = 1513414157897043998
 YOUTUBE_POST_CHANNEL_ID = 1513404982471164034
@@ -936,6 +1084,13 @@ async def on_ready():
         flush=True
     )
 
+    followers_test = await get_tiktok_follower_count("kurocatkurimu")
+
+    print(
+        f"TEST FOLLOWER KUROCAT = {followers_test}",
+        flush=True
+    )
+    
     # Fungsi checker SUDAH didefinisikan di atas,
     # jadi aman dipanggil dari sini.
 
