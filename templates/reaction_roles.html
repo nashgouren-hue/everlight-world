@@ -208,12 +208,30 @@
             Buat pesan Discord yang memberikan role saat member memilih emoji.
         </div>
 
-        {% if request.args.get("saved") %}
-            <div class="success">
-                Pengaturan Reaction Roles berhasil disimpan.
-            </div>
-        {% endif %}
+       {% if request.args.get("saved") %}
+    <div class="success">
+        ✅ Pengaturan Reaction Roles berhasil disimpan.
+    </div>
+{% endif %}
 
+{% if request.args.get("sent") %}
+    <div class="success">
+        ✅ Reaction Roles berhasil dikirim ke Discord.
+    </div>
+{% endif %}
+
+{% if request.args.get("error") %}
+    <div
+        class="success"
+        style="
+            color: #ffd1d1;
+            background: #3a171d;
+            border-color: #a43b4b;
+        "
+    >
+        ❌ {{ request.args.get("error") }}
+    </div>
+{% endif %}
         <form method="POST">
             <section class="card">
                 <h2>Message Settings</h2>
@@ -280,22 +298,80 @@
                 </div>
 
                 <div id="role-list">
-                    <div class="role-row">
-                        <input name="role_emoji" placeholder="🌙">
-                        <input name="role_id" placeholder="Role ID">
-                        <input name="role_description" placeholder="Socializer & Community Member">
-                        <button class="delete-button" type="button" onclick="removeRole(this)">×</button>
-                    </div>
-                </div>
+    {% set saved_roles = settings.get("roles", []) %}
+
+    {% if saved_roles %}
+        {% for item in saved_roles %}
+            <div class="role-row">
+                <input
+                    name="role_emoji"
+                    value="{{ item.get('emoji', '') }}"
+                    placeholder="🌙"
+                >
+
+                <input
+                    name="role_id"
+                    value="{{ item.get('role_id', '') }}"
+                    placeholder="Role ID"
+                >
+
+                <input
+                    name="role_description"
+                    value="{{ item.get('description', '') }}"
+                    placeholder="Role description"
+                >
+
+                <button
+                    class="delete-button"
+                    type="button"
+                    onclick="removeRole(this)"
+                >
+                    ×
+                </button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="role-row">
+            <input name="role_emoji" placeholder="🌙">
+            <input name="role_id" placeholder="Role ID">
+            <input
+                name="role_description"
+                placeholder="Socializer & Community Member"
+            >
+            <button
+                class="delete-button"
+                type="button"
+                onclick="removeRole(this)"
+            >
+                ×
+            </button>
+        </div>
+    {% endif %}
+</div>
 
                 <button class="add-button" type="button" onclick="addRole()">
                     + Add Role
                 </button>
             </section>
 
-            <button class="save-button" type="submit">
-                Save Reaction Roles
-            </button>
+            <button
+    class="save-button"
+    type="submit"
+    name="action"
+    value="save"
+>
+    💾 Save Settings
+</button>
+
+<button
+    class="save-button"
+    type="submit"
+    name="action"
+    value="send"
+    style="background: #d4af37; color: #11111d;"
+>
+    🚀 Send to Discord
+</button>
         </form>
     </main>
 
