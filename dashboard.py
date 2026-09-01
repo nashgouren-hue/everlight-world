@@ -14,6 +14,16 @@ app.secret_key = os.environ.get(
 TIKTOK_CLIENT_KEY = os.environ.get("TIKTOK_CLIENT_KEY", "")
 TIKTOK_CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET", "")
 
+BOT_API_URL = os.environ.get(
+    "BOT_API_URL",
+    "https://everlight-world-production.up.railway.app"
+)
+
+DASHBOARD_API_SECRET = os.environ.get(
+    "DASHBOARD_API_SECRET",
+    ""
+)
+
 TIKTOK_REDIRECT_URI = (
     "https://everlight-world-production.up.railway.app/tiktok/callback"
 )
