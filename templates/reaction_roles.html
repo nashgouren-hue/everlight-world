@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Roles - Everlight</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b0b14;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            padding: 28px 20px;
+            background: #11111d;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #aaa9c9;
+            font-size: 14px;
+            margin-bottom: 35px;
+        }
+
+        .menu {
+            display: block;
+            color: #ddd;
+            text-decoration: none;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .menu:hover {
+            background: #23213b;
+        }
+
+        .menu.active {
+            background: #3a2f6b;
+            color: white;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 42px;
+            width: calc(100% - 250px);
+            max-width: 1100px;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .page-description {
+            color: #aaa9c9;
+            margin-bottom: 30px;
+        }
+
+        .success {
+            padding: 14px;
+            margin-bottom: 20px;
+            color: #b8ffd1;
+            background: #143322;
+            border: 1px solid #2c8b54;
+            border-radius: 10px;
+        }
+
+        .card {
+            padding: 24px;
+            margin-bottom: 22px;
+            background: #151522;
+            border: 1px solid #292940;
+            border-radius: 14px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 19px;
+        }
+
+        label {
+            display: block;
+            margin: 18px 0 8px;
+            color: #deddf1;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 13px;
+            color: white;
+            background: #0d0d18;
+            border: 1px solid #34344e;
+            border-radius: 9px;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #8b5cf6;
+        }
+
+        input[type="color"] {
+            width: 90px;
+            height: 48px;
+            padding: 5px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .checkbox-row input {
+            width: auto;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+        }
+
+        .role-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 1.5fr 45px;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .delete-button {
+            color: white;
+            background: #772b3a;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+        }
+
+        .add-button,
+        .save-button {
+            padding: 13px 18px;
+            color: white;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .add-button {
+            background: #363356;
+        }
+
+        .save-button {
+            margin-top: 10px;
+            background: #6d48d7;
+        }
+
+        .hint {
+            color: #9291ad;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">✨ Everlight</div>
+        <div class="subtitle">Bot Dashboard</div>
+
+        <a class="menu" href="/">🏠 Dashboard</a>
+        <a class="menu" href="/welcome">👋 Welcome</a>
+        <a class="menu" href="/autorole">🌙 Auto Role</a>
+        <a class="menu active" href="/reaction-roles">🎭 Reaction Roles</a>
+        <a class="menu" href="/moderation">🛡️ Moderation</a>
+        <a class="menu" href="/tiktok">🎵 TikTok</a>
+    </aside>
+
+    <main class="content">
+        <h1>🎭 Reaction Roles</h1>
+
+        <div class="page-description">
+            Buat pesan Discord yang memberikan role saat member memilih emoji.
+        </div>
+
+        {% if request.args.get("saved") %}
+            <div class="success">
+                Pengaturan Reaction Roles berhasil disimpan.
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            <section class="card">
+                <h2>Message Settings</h2>
+
+                <label for="channel_id">Discord Channel ID</label>
+                <input
+                    id="channel_id"
+                    name="channel_id"
+                    type="text"
+                    value="{{ settings.get('channel_id', '') }}"
+                    placeholder="Contoh: 123456789012345678"
+                    required
+                >
+
+                <label for="title">Embed Title</label>
+                <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    value="{{ settings.get('title', '🏅 Choose Your Light') }}"
+                    required
+                >
+
+                <label for="description">Embed Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    required
+                >{{ settings.get('description', 'Select your class and begin your journey through Everlight.') }}</textarea>
+
+                <label for="color">Embed Color</label>
+                <input
+                    id="color"
+                    name="color"
+                    type="color"
+                    value="{{ settings.get('color', '#d4af37') }}"
+                >
+
+                <label for="image_url">Banner Image URL</label>
+                <input
+                    id="image_url"
+                    name="image_url"
+                    type="url"
+                    value="{{ settings.get('image_url', '') }}"
+                    placeholder="https://..."
+                >
+
+                <div class="checkbox-row">
+                    <input
+                        id="tag_everyone"
+                        name="tag_everyone"
+                        type="checkbox"
+                        {% if settings.get("tag_everyone") %}checked{% endif %}
+                    >
+                    <label for="tag_everyone">Tag @everyone ketika pesan dikirim</label>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Role Choices</h2>
+
+                <div class="hint">
+                    Isi emoji, Discord Role ID, dan deskripsi setiap role.
+                </div>
+
+                <div id="role-list">
+                    <div class="role-row">
+                        <input name="role_emoji" placeholder="🌙">
+                        <input name="role_id" placeholder="Role ID">
+                        <input name="role_description" placeholder="Socializer & Community Member">
+                        <button class="delete-button" type="button" onclick="removeRole(this)">×</button>
+                    </div>
+                </div>
+
+                <button class="add-button" type="button" onclick="addRole()">
+                    + Add Role
+                </button>
+            </section>
+
+            <button class="save-button" type="submit">
+                Save Reaction Roles
+            </button>
+        </form>
+    </main>
+
+    <script>
+        function addRole() {
+            const list = document.getElementById("role-list");
+            const row = document.createElement("div");
+
+            row.className = "role-row";
+            row.innerHTML = `
+                <input name="role_emoji" placeholder="🌙">
+                <input name="role_id" placeholder="Role ID">
+                <input name="role_description" placeholder="Role description">
+                <button class="delete-button" type="button" onclick="removeRole(this)">×</button>
+            `;
+
+            list.appendChild(row);
+        }
+
+        function removeRole(button) {
+            const list = document.getElementById("role-list");
+
+            if (list.children.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+    </script>
+</body>
+</html>
