@@ -2439,10 +2439,252 @@ async def home_page(request):
 # WEB SERVER
 # =====================================================
 
+async def create_reaction_roles_api(request):
+    api_secret = os.getenv(
+        "DASHBOARD_API_SECRET",
+        ""
+    )
+
+    received_secret = request.headers.get(
+        "X-Everlight-Secret",
+        ""
+    )
+
+    if not api_secret or received_secret != api_secret:
+        return web.json_response(
+            {
+                "success": False,
+                "error": "Unauthorized"
+            },
+            status=401
+        )
+
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response(
+            {
+                "success": False,
+                "error": "JSON tidak valid."
+            },
+            status=400
+        )
+
+    try:
+        channel_id = int(data.get("channel_id", ""))
+    except (TypeError, ValueError):
+        return web.json_response(
+            {
+                "success": False,
+                "error": "Channel ID tidak valid."
+            },
+            status=400
+        )
+
+    channel = bot.get_channel(channel_id)
+
+    if channel is None:
+        try:
+            channel = await bot.fetch_channel(channel_id)
+        except (
+            discord.NotFound,
+            discord.Forbidden,
+            discord.HTTPException
+        ):
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Channel Discord tidak ditemukan."
+                },
+                status=404
+            )
+
+    roles_data = data.get("roles", [])
+
+    if not roles_data:
+        return web.json_response(
+            {
+                "success": False,
+                "error": "Minimal harus ada satu role."
+            },
+            status=400
+        )
+
+    valid_roles = []
+
+    for item in roles_data:
+        emoji = str(
+            item.get("emoji", "")
+        ).strip()
+
+        description = str(
+            item.get("description", "")
+        ).strip()
+
+        try:
+            role_id = int(item.get("role_id", ""))
+        except (TypeError, ValueError):
+            continue
+
+        role = channel.guild.get_role(role_id)
+
+        if not emoji or role is None:
+            continue
+
+        valid_roles.append({
+            "emoji": emoji,
+            "role": role,
+            "description": description
+        })
+
+    if not valid_roles:
+        return web.json_response(
+            {
+                "success": False,
+                "error": "Role ID atau emoji tidak valid."
+            },
+            status=400
+        )
+
+    color_text = str(
+        data.get("color", "#d4af37")
+    ).replace("#", "")
+
+    try:
+        embed_color = int(color_text, 16)
+    except ValueError:
+        embed_color = 0xD4AF37
+
+    description_parts = []
+
+    main_description = str(
+        data.get("description", "")
+    ).strip()
+
+    if main_description:
+        description_parts.append(main_description)
+
+    for item in valid_roles:
+        role_line = (
+            f"{item['emoji']} "
+            f"**{item['role'].name}**"
+        )
+
+        if item["description"]:
+            role_line += (
+                f"\n{item['description']}"
+            )
+
+        description_parts.append(role_line)
+
+    embed = discord.Embed(
+        title=str(
+            data.get(
+                "title",
+                "🏅 Choose Your Light"
+            )
+        ),
+        description="\n\n".join(
+            description_parts
+        ),
+        color=embed_color
+    )
+
+    image_url = str(
+        data.get("image_url", "")
+    ).strip()
+
+    if image_url:
+        embed.set_image(url=image_url)
+
+    tag_everyone = bool(
+        data.get("tag_everyone", False)
+    )
+
+    try:
+        message = await channel.send(
+            content=(
+                "@everyone"
+                if tag_everyone
+                else None
+            ),
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(
+                everyone=tag_everyone
+            )
+        )
+
+        for item in valid_roles:
+            await message.add_reaction(
+                item["emoji"]
+            )
+
+    except discord.Forbidden:
+        return web.json_response(
+            {
+                "success": False,
+                "error": (
+                    "Bot tidak memiliki permission "
+                    "mengirim pesan atau menambah reaction."
+                )
+            },
+            status=403
+        )
+
+    except discord.HTTPException as error:
+        return web.json_response(
+            {
+                "success": False,
+                "error": f"Discord error: {error}"
+            },
+            status=500
+        )
+
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO reaction_role_messages
+        (message_id, guild_id, channel_id)
+        VALUES (?, ?, ?)
+        """,
+        (
+            message.id,
+            channel.guild.id,
+            channel.id
+        )
+    )
+
+    for item in valid_roles:
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO reaction_role_items
+            (message_id, emoji, role_id, description)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                message.id,
+                item["emoji"],
+                item["role"].id,
+                item["description"]
+            )
+        )
+
+    db.commit()
+
+    return web.json_response({
+        "success": True,
+        "message_id": str(message.id),
+        "channel_id": str(channel.id)
+    })
+
 async def start_web_server():
 
     app = web.Application()
 
+    app.router.add_post(
+        "/api/reaction-roles",
+        create_reaction_roles_api
+    )
+    
     app.router.add_get(
         "/",
         home_page
