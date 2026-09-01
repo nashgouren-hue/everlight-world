@@ -249,6 +249,25 @@ CREATE TABLE IF NOT EXISTS warnings (
 
 db.commit()
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS reaction_role_messages (
+    message_id INTEGER PRIMARY KEY,
+    guild_id INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS reaction_role_items (
+    message_id INTEGER NOT NULL,
+    emoji TEXT NOT NULL,
+    role_id INTEGER NOT NULL,
+    description TEXT DEFAULT '',
+    PRIMARY KEY (message_id, emoji)
+)
+""")
+
+db.commit()
 
 # =====================================================
 # DISCORD BOT
