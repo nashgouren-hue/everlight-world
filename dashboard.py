@@ -327,19 +327,59 @@ def reaction_roles():
     settings = load_settings()
 
     if request.method == "POST":
+        emojis = request.form.getlist("role_emoji")
+        role_ids = request.form.getlist("role_id")
+        descriptions = request.form.getlist("role_description")
+
+        roles = []
+
+        for emoji, role_id, description in zip(
+            emojis,
+            role_ids,
+            descriptions
+        ):
+            emoji = emoji.strip()
+            role_id = role_id.strip()
+            description = description.strip()
+
+            if emoji and role_id:
+                roles.append({
+                    "emoji": emoji,
+                    "role_id": role_id,
+                    "description": description
+                })
+
         settings["reaction_roles"] = {
-            "channel_id": request.form.get("channel_id", "").strip(),
+            "channel_id": request.form.get(
+                "channel_id",
+                ""
+            ).strip(),
+
             "title": request.form.get(
                 "title",
                 "🏅 Choose Your Light"
             ).strip(),
+
             "description": request.form.get(
                 "description",
                 "Select your class and begin your journey through Everlight."
             ).strip(),
-            "color": request.form.get("color", "#d4af37").strip(),
-            "image_url": request.form.get("image_url", "").strip(),
-            "tag_everyone": request.form.get("tag_everyone") == "on",
+
+            "color": request.form.get(
+                "color",
+                "#d4af37"
+            ).strip(),
+
+            "image_url": request.form.get(
+                "image_url",
+                ""
+            ).strip(),
+
+            "tag_everyone": (
+                request.form.get("tag_everyone") == "on"
+            ),
+
+            "roles": roles
         }
 
         save_settings(settings)
@@ -351,7 +391,10 @@ def reaction_roles():
             )
         )
 
-    reaction_settings = settings.get("reaction_roles", {})
+    reaction_settings = settings.get(
+        "reaction_roles",
+        {}
+    )
 
     return render_template(
         "reaction_roles.html",
