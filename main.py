@@ -292,6 +292,114 @@ class EverlightBot(discord.Client):
 
 bot = EverlightBot()
 
+def get_reaction_role(message_id, emoji):
+    cursor.execute(
+        """
+        SELECT role_id
+        FROM reaction_role_items
+        WHERE message_id = ? AND emoji = ?
+        """,
+        (
+            message_id,
+            emoji
+        )
+    )
+
+    result = cursor.fetchone()
+
+    if result is None:
+        return None
+
+    return result[0]
+
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+
+    role_id = get_reaction_role(
+        payload.message_id,
+        str(payload.emoji)
+    )
+
+    if role_id is None:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+
+    if guild is None:
+        return
+
+    role = guild.get_role(role_id)
+
+    if role is None:
+        return
+
+    member = payload.member
+
+    if member is None:
+        try:
+            member = await guild.fetch_member(
+                payload.user_id
+            )
+        except discord.NotFound:
+            return
+
+    try:
+        await member.add_roles(
+            role,
+            reason="Everlight Reaction Role"
+        )
+    except discord.Forbidden:
+        print(
+            f"Gagal memberi role {role.name}. "
+            "Periksa posisi role dan permission bot.",
+            flush=True
+        )
+
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    role_id = get_reaction_role(
+        payload.message_id,
+        str(payload.emoji)
+    )
+
+    if role_id is None:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+
+    if guild is None:
+        return
+
+    role = guild.get_role(role_id)
+
+    if role is None:
+        return
+
+    try:
+        member = await guild.fetch_member(
+            payload.user_id
+        )
+    except discord.NotFound:
+        return
+
+    if member.bot:
+        return
+
+    try:
+        await member.remove_roles(
+            role,
+            reason="Everlight Reaction Role removed"
+        )
+    except discord.Forbidden:
+        print(
+            f"Gagal mencabut role {role.name}. "
+            "Periksa posisi role dan permission bot.",
+            flush=True
+        )
 
 # =====================================================
 # WELCOME IMAGE
