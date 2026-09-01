@@ -318,7 +318,46 @@ def autorole():
         settings=settings
     )
 
+# ============================================
+# REACTION ROLES
+# ============================================
 
+@app.route("/reaction-roles", methods=["GET", "POST"])
+def reaction_roles():
+    settings = load_settings()
+
+    if request.method == "POST":
+        settings["reaction_roles"] = {
+            "channel_id": request.form.get("channel_id", "").strip(),
+            "title": request.form.get(
+                "title",
+                "🏅 Choose Your Light"
+            ).strip(),
+            "description": request.form.get(
+                "description",
+                "Select your class and begin your journey through Everlight."
+            ).strip(),
+            "color": request.form.get("color", "#d4af37").strip(),
+            "image_url": request.form.get("image_url", "").strip(),
+            "tag_everyone": request.form.get("tag_everyone") == "on",
+        }
+
+        save_settings(settings)
+
+        return redirect(
+            url_for(
+                "reaction_roles",
+                saved="1"
+            )
+        )
+
+    reaction_settings = settings.get("reaction_roles", {})
+
+    return render_template(
+        "reaction_roles.html",
+        settings=reaction_settings
+    )
+    
 # ==================================================
 # MODERATION SETTINGS
 # ==================================================
