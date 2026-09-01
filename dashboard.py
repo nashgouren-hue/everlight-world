@@ -1097,9 +1097,81 @@ def settings_page():
 
         save_settings(settings)
 
+        action = request.form.get(
+            "action",
+            "save"
+        )
+
+        if action == "send":
+            if not DASHBOARD_API_SECRET:
+                return redirect(
+                    url_for(
+                        "reaction_roles",
+                        error=(
+                            "DASHBOARD_API_SECRET "
+                            "belum diatur di Railway."
+                        )
+                    )
+                )
+
+            try:
+                response = requests.post(
+                    (
+                        BOT_API_URL.rstrip("/")
+                        + "/api/reaction-roles"
+                    ),
+                    headers={
+                        "X-Everlight-Secret": (
+                            DASHBOARD_API_SECRET
+                        )
+                    },
+                    json=settings["reaction_roles"],
+                    timeout=30
+                )
+
+            except requests.RequestException as error:
+                return redirect(
+                    url_for(
+                        "reaction_roles",
+                        error=(
+                            "Tidak dapat terhubung "
+                            f"ke bot: {error}"
+                        )
+                    )
+                )
+
+            if response.status_code != 200:
+                try:
+                    error_message = response.json().get(
+                        "error",
+                        response.text
+                    )
+                except ValueError:
+                    error_message = response.text
+
+                return redirect(
+                    url_for(
+                        "reaction_roles",
+                        error=error_message
+                    )
+                )
+
+            result = response.json()
+
+            return redirect(
+                url_for(
+                    "reaction_roles",
+                    sent="1",
+                    message_id=result.get(
+                        "message_id",
+                        ""
+                    )
+                )
+            )
+
         return redirect(
             url_for(
-                "settings_page",
+                "reaction_roles",
                 saved="1"
             )
         )
